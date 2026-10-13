@@ -77,10 +77,6 @@ export interface ModelEffortPickerProps {
 	className?: string;
 }
 
-function hasKindGlyph(model: WireModel): boolean {
-	return model.auth !== undefined && model.auth.kind !== "other";
-}
-
 /** The connection-kind mark: key = API key, ∞ = subscription, { } = environment key, JCP = JetBrains AI. */
 function KindGlyph({ model, className }: { model: WireModel; className?: string }) {
 	switch (model.auth?.kind) {
@@ -645,11 +641,6 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								<span className="truncate text-text-muted tr-text-metadata">{pillModel.name}</span>
 							) : null}
 							<EffortIndicator level={pillLevel} />
-							{hasKindGlyph(pillModel) ? (
-								<IconTooltip label={describeAuth(pillModel)} wrapTrigger>
-									<KindGlyph model={pillModel} className="text-text-muted" />
-								</IconTooltip>
-							) : null}
 						</>
 					) : null}
 					<ChevronDown className="size-14 shrink-0 text-text-muted" />
