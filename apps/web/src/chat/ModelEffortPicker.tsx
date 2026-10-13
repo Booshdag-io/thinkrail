@@ -28,7 +28,16 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@thinkrail/ui/popover";
 import { IconTooltip } from "@thinkrail/ui/tooltip";
 import { cn } from "@thinkrail/ui/utils";
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+	forwardRef,
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { createPortal } from "react-dom";
 import {
 	CENTRAL_KIND_TAG,
 	costLabel,
@@ -353,7 +362,7 @@ function GroupDivider() {
 /** Priority order for ALL MODELS providers. */
 const PRIORITY_PROVIDERS = ["Anthropic", "OpenAI", "Google"] as const;
 
-/** Provider row with flyout for models on hover/focus/click. */
+/** Provider row with portal-based flyout for models on hover/focus/click. */
 function ProviderRowWithFlyout({
 	provider,
 	models,
@@ -362,6 +371,7 @@ function ProviderRowWithFlyout({
 	isActive,
 	onActivate,
 	onDeactivate,
+	container,
 }: {
 	provider: string;
 	models: WireModel[];
@@ -370,10 +380,64 @@ function ProviderRowWithFlyout({
 	isActive: boolean;
 	onActivate: () => void;
 	onDeactivate: () => void;
+	container?: HTMLElement | null | undefined;
 }) {
-	const rowRef = useRef<HTMLDivElement>(null);
+	const rowRef = useRef<HTMLButtonElement>(null);
 	const flyoutRef = useRef<HTMLDivElement>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+	// Calculate flyout position when active
+	useEffect(() => {
+		if (!isActive || !rowRef.current) {
+			setPosition(null);
+			return;
+		}
+
+		const updatePosition = () => {
+			const row = rowRef.current;
+			if (!row) return;
+
+			const rowRect = row.getBoundingClientRect();
+			const flyoutWidth = 280;
+			const flyoutMaxHeight = 280;
+			const gap = 8;
+
+			// Default: position to the right of the row
+			let left = rowRect.right + gap;
+			let top = rowRect.top;
+
+			// Check if flyout would overflow right edge of viewport
+			if (left + flyoutWidth > window.innerWidth - 8) {
+				// Position to the left of the main popup instead
+				left = rowRect.left - flyoutWidth - gap;
+			}
+
+			// Ensure flyout doesn't overflow bottom of viewport
+			const maxTop = window.innerHeight - flyoutMaxHeight - 8;
+			if (top > maxTop) {
+				top = Math.max(8, maxTop);
+			}
+
+			// Ensure flyout doesn't overflow top of viewport
+			if (top < 8) {
+				top = 8;
+			}
+
+			setPosition({ top, left });
+		};
+
+		updatePosition();
+
+		// Update position on scroll/resize
+		window.addEventListener("scroll", updatePosition, true);
+		window.addEventListener("resize", updatePosition);
+
+		return () => {
+			window.removeEventListener("scroll", updatePosition, true);
+			window.removeEventListener("resize", updatePosition);
+		};
+	}, [isActive]);
 
 	const clearDelayedClose = useCallback(() => {
 		if (timeoutRef.current) {
@@ -415,9 +479,12 @@ function ProviderRowWithFlyout({
 		[onActivate, onDeactivate],
 	);
 
+	const portalContainer = container ?? document.body;
+
 	return (
-		<div className="relative" ref={rowRef}>
+		<>
 			<button
+				ref={rowRef}
 				type="button"
 				data-testid="provider-row"
 				data-provider={provider}
@@ -440,21 +507,30 @@ function ProviderRowWithFlyout({
 				{auth ? <span className="truncate text-text-subtle tr-text-metadata">{auth}</span> : null}
 				<ChevronRight className="size-12 shrink-0 text-text-muted" />
 			</button>
-			{isActive ? (
-				<div
-					ref={flyoutRef}
-					role="listbox"
-					aria-label={`${provider} models`}
-					onMouseEnter={handleMouseEnter}
-					onMouseLeave={handleMouseLeave}
-					className="absolute top-0 left-full z-50 ml-2 max-h-[280px] w-[280px] overflow-y-auto rounded-md border border-border-default bg-container-elevated-bg p-2 shadow-lg"
-				>
-					<Command className="bg-transparent">
-						<CommandList>{models.map((m) => renderModel(m))}</CommandList>
-					</Command>
-				</div>
-			) : null}
-		</div>
+			{isActive && position
+				? createPortal(
+						<div
+							ref={flyoutRef}
+							role="listbox"
+							aria-label={`${provider} models`}
+							onMouseEnter={handleMouseEnter}
+							onMouseLeave={handleMouseLeave}
+							style={{
+								position: "fixed",
+								top: position.top,
+								left: position.left,
+								zIndex: 100,
+							}}
+							className="max-h-[280px] w-[280px] overflow-y-auto rounded-md border border-border-default bg-container-elevated-bg p-2 shadow-lg"
+						>
+							<Command className="bg-transparent">
+								<CommandList>{models.map((m) => renderModel(m))}</CommandList>
+							</Command>
+						</div>,
+						portalContainer,
+					)
+				: null}
+		</>
 	);
 }
 
@@ -741,6 +817,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 													isActive={activeFlyout === group.provider}
 													onActivate={() => setActiveFlyout(group.provider)}
 													onDeactivate={() => setActiveFlyout(null)}
+													container={container}
 												/>
 											);
 										})}
