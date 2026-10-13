@@ -732,7 +732,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					data-testid="model-selector"
 					data-open={open}
 					className={cn(
-						"flex h-32 min-w-0 items-center gap-8 rounded-sm px-8 tr-text-ui text-text-default outline-none transition-colors hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary data-[open=true]:bg-control-bg-selected",
+						"flex h-32 min-w-0 items-center gap-8 rounded-sm px-8 tr-text-ui text-text-muted outline-none transition-colors hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary data-[open=true]:bg-control-bg-selected",
 						className,
 					)}
 				>
@@ -762,7 +762,12 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 				>
 					<Command className="min-h-0 flex-1 bg-transparent text-text-muted">
 						<div className="flex items-center border-border-default border-b [&>div]:min-w-0 [&>div]:flex-1 [&>div]:border-none">
-							<CommandInput placeholder="Search model" value={query} onValueChange={setQuery} />
+							<CommandInput
+								placeholder="Search model"
+								value={query}
+								onValueChange={setQuery}
+								className="text-text-muted"
+							/>
 							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
 								<button
 									type="button"
