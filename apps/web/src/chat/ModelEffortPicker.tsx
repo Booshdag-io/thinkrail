@@ -511,7 +511,7 @@ function ProviderRowWithFlyout({
 				onFocus={handleFocus}
 				onKeyDown={handleKeyDown}
 				className={cn(
-					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-[1px] outline-none transition-colors",
+					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 outline-none transition-colors",
 					"hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
 					isActive && "bg-control-bg-selected",
 				)}
@@ -541,7 +541,7 @@ function ProviderRowWithFlyout({
 							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
 							<Command className="bg-transparent">
-								<CommandList className="max-h-[280px] p-12">
+								<CommandList className="max-h-[280px] p-12 space-y-2 [&_[cmdk-item]]:py-0">
 									{models.map((m) => renderModel(m))}
 								</CommandList>
 							</Command>
@@ -664,7 +664,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					title={describeAuth(model) ?? undefined}
 					onSelect={() => pickModel(model)}
 					className={cn(
-						"group/row items-start gap-8 py-[1px]",
+						"group/row items-start gap-8",
 						isCurrent && "bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 					)}
 				>
@@ -768,7 +768,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								</button>
 							</IconTooltip>
 						</div>
-						<CommandList className="max-h-[340px] min-h-0 flex-1 px-12">
+						<CommandList className="max-h-[340px] min-h-0 flex-1 px-12 [&_[cmdk-group-items]]:space-y-2 [&_[cmdk-item]]:py-0">
 							<CommandEmpty>No models found.</CommandEmpty>
 							{defaultOption ? (
 								<CommandGroup>
@@ -781,7 +781,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 											close();
 										}}
 										className={cn(
-											"items-start gap-8 py-[1px]",
+											"items-start gap-8",
 											defaultOption.active &&
 												"bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 										)}
