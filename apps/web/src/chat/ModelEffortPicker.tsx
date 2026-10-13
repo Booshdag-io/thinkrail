@@ -355,9 +355,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 	return <span className="block pt-8 pb-8 tr-text-eyebrow text-text-subtle">{children}</span>;
 }
 
-/** Inset divider aligned with content padding. 12px vertical margin total (6px each side). */
+/** Inset divider with 12px space above (from last row) and 4px below (before next heading). */
 function GroupDivider() {
-	return <div className="mx-8 my-[6px] h-px bg-border-muted" />;
+	return <div className="mt-12 mb-4 h-px bg-border-muted" />;
 }
 
 /** Priority order for ALL MODELS providers. */
@@ -410,7 +410,7 @@ function ProviderRowWithFlyout({
 			const mainPopupRect = mainPopup?.getBoundingClientRect();
 			const flyoutWidth = 280;
 			const flyoutMaxHeight = 280;
-			const gap = 8;
+			const gap = 0; // No gap - submenu attaches directly to main popup
 
 			// Default: position to the right of the main popup (not the row)
 			let left = mainPopupRect ? mainPopupRect.right + gap : rowRect.right + gap;
@@ -511,7 +511,7 @@ function ProviderRowWithFlyout({
 				onFocus={handleFocus}
 				onKeyDown={handleKeyDown}
 				className={cn(
-					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-4 outline-none transition-colors",
+					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-[1px] outline-none transition-colors",
 					"hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
 					isActive && "bg-control-bg-selected",
 				)}
@@ -541,7 +541,7 @@ function ProviderRowWithFlyout({
 							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
 							<Command className="bg-transparent">
-								<CommandList className="max-h-[280px] p-2">
+								<CommandList className="max-h-[280px] p-12">
 									{models.map((m) => renderModel(m))}
 								</CommandList>
 							</Command>
@@ -574,6 +574,14 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const [query, setQuery] = useState("");
 		const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
 		const mainPopupRef = useRef<HTMLDivElement>(null);
+
+		// Freeze recents when popup opens to prevent reordering during selection
+		const [frozenRecents, setFrozenRecents] = useState<WireModel[]>([]);
+		useEffect(() => {
+			if (open) {
+				setFrozenRecents(preferences.recents);
+			}
+		}, [open, preferences.recents]);
 
 		const openWith = (next: string) => {
 			setQuery(next);
@@ -611,12 +619,9 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 			() => new Set(preferences.favorites.map(modelKey)),
 			[preferences.favorites],
 		);
-		const recentKeys = useMemo(
-			() => new Set(preferences.recents.map(modelKey)),
-			[preferences.recents],
-		);
+		const recentKeys = useMemo(() => new Set(frozenRecents.map(modelKey)), [frozenRecents]);
 
-		const shortlist = preferences.favorites.length > 0 || preferences.recents.length > 0;
+		const shortlist = preferences.favorites.length > 0 || frozenRecents.length > 0;
 		const isSearching = query.trim() !== "";
 
 		// Sort providers to show priority providers first (Anthropic, OpenAI, Google)
@@ -763,7 +768,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								</button>
 							</IconTooltip>
 						</div>
-						<CommandList className="max-h-[340px] min-h-0 flex-1">
+						<CommandList className="max-h-[340px] min-h-0 flex-1 px-12">
 							<CommandEmpty>No models found.</CommandEmpty>
 							{defaultOption ? (
 								<CommandGroup>
@@ -801,11 +806,11 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 									</CommandGroup>
 								</>
 							) : null}
-							{preferences.recents.length > 0 ? (
+							{frozenRecents.length > 0 ? (
 								<>
 									{defaultOption || preferences.favorites.length > 0 ? <GroupDivider /> : null}
 									<CommandGroup heading={<SectionLabel>RECENT</SectionLabel>}>
-										{preferences.recents.map((m) => renderModel(m, "recent"))}
+										{frozenRecents.map((m) => renderModel(m, "recent"))}
 									</CommandGroup>
 								</>
 							) : null}
