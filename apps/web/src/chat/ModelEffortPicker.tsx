@@ -1,13 +1,13 @@
 import {
 	RiBracesLine as Braces,
-	RiCheckboxCircleFill as CheckCircleFill,
-	RiCheckboxCircleLine as CheckCircleLine,
 	RiArrowDownSLine as ChevronDown,
 	RiArrowRightSLine as ChevronRight,
 	RiInfinityLine as InfinityMark,
 	RiKey2Line as Key,
 	RiPushpinLine as PinLine,
 	RiRefreshLine as RefreshCw,
+	RiRadioButtonFill,
+	RiRadioButtonLine,
 	RiSparkling2Line as Sparkles,
 	RiUnpinLine as UnpinLine,
 } from "@remixicon/react";
@@ -408,7 +408,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const renderModel = (model: WireModel, section: string) => {
 			const pinned = preferences.isFavorite(model);
 			const isCurrent = !defaultOption?.active && sameModel(model, current);
-			const isDefaultModel = preferences.isDefault(model, level);
+			const isDefault = preferences.isDefaultModel(model);
 			return (
 				<CommandItem
 					key={`${section}:${modelKey(model)}`}
@@ -434,20 +434,20 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 							{/* Set as default action */}
 							<RowIconButton
 								testId="model-set-default"
-								label={isDefaultModel ? "Default for new chats" : "Set as default"}
-								active={isDefaultModel}
-								disabled={isDefaultModel}
+								label={isDefault ? "Default model" : "Set as default"}
+								active={isDefault}
+								disabled={isDefault}
 								onClick={(event) => {
 									event.stopPropagation();
-									if (!isDefaultModel) {
+									if (!isDefault) {
 										preferences.setDefault(model, level);
 									}
 								}}
 							>
-								{isDefaultModel ? (
-									<CheckCircleFill className="size-14" />
+								{isDefault ? (
+									<RiRadioButtonFill className="size-14 text-primary" />
 								) : (
-									<CheckCircleLine className="size-14" />
+									<RiRadioButtonLine className="size-14" />
 								)}
 							</RowIconButton>
 							{/* Pin/unpin action */}

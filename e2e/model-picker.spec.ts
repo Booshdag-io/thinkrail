@@ -120,7 +120,7 @@ test("the composer pill stars a favorite, records it as recent, and saves the pa
 				defaultEffort: "high",
 			});
 		await expect(option.locator('[data-testid="model-set-default"]')).toHaveAttribute(
-			"data-default",
+			"data-active",
 			"true",
 		);
 		await page.keyboard.press("Escape");
