@@ -8,6 +8,8 @@ import {
 	RiRefreshLine as RefreshCw,
 	RiRadioButtonFill,
 	RiRadioButtonLine,
+	RiStopFill,
+	RiStopLine,
 	RiSparkling2Line as Sparkles,
 	RiUnpinLine as UnpinLine,
 } from "@remixicon/react";
@@ -33,12 +35,8 @@ import {
 	CENTRAL_KIND_TAG,
 	costLabel,
 	describeAuth,
-	EFFORT_BAR_HEIGHTS,
 	formatContext,
 	kindLabel,
-	type LevelTone,
-	levelTone,
-	litBars,
 	modelKey,
 	type ProviderGroup,
 	trailingLevel,
@@ -110,33 +108,46 @@ function KindGlyph({ model, className }: { model: WireModel; className?: string 
 	}
 }
 
-function EffortBars({
-	level,
-	levels,
-	className,
-}: {
-	level: ThinkingLevel;
-	levels: readonly ThinkingLevel[];
-	className?: string;
-}) {
-	const lit = litBars(level, levels);
+/** Effort level display names for accessibility. */
+const EFFORT_LABELS: Record<ThinkingLevel, string> = {
+	off: "Off",
+	minimal: "Minimal",
+	low: "Low",
+	medium: "Medium",
+	high: "High",
+	xhigh: "Extra High",
+	max: "Maximum",
+};
+
+/** Compact effort indicator icon for the collapsed model pill. */
+function EffortIndicator({ level }: { level: ThinkingLevel }) {
+	// Icon and color based on effort level:
+	// - Off/Minimal: square-line, muted
+	// - Low: square-line, default text
+	// - Medium: square-fill, default text
+	// - High/XHigh/Max: square-fill, success green (design system uses feedback colors for effort tones)
+	const isLowEffort = level === "off" || level === "minimal" || level === "low";
+	const isHighEffort = level === "high" || level === "xhigh" || level === "max";
+	const Icon = isLowEffort ? RiStopLine : RiStopFill;
+	const colorClass =
+		level === "minimal" || level === "off"
+			? "text-text-muted"
+			: isHighEffort
+				? "text-feedback-success"
+				: "text-text-default";
+
 	return (
-		<span aria-hidden className={cn("inline-flex h-12 shrink-0 items-end gap-2", className)}>
-			{EFFORT_BAR_HEIGHTS.map((height, index) => (
-				<span
-					key={height}
-					className={cn("w-2 rounded-xs bg-current", height, index >= lit && "opacity-30")}
-				/>
-			))}
-		</span>
+		<IconTooltip label={`Effort: ${EFFORT_LABELS[level]}`}>
+			<span
+				data-testid="effort-indicator"
+				data-level={level}
+				className={cn("flex shrink-0 items-center", colorClass)}
+			>
+				<Icon className="size-12" />
+			</span>
+		</IconTooltip>
 	);
 }
-
-const TONE_TEXT: Record<LevelTone, string> = {
-	cool: "text-feedback-info",
-	accent: "text-primary",
-	hot: "text-feedback-warning",
-};
 
 /** The visible effort levels (off is hidden but preserved if the model supports it). */
 const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
@@ -502,18 +513,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 							{defaultOption?.active ? (
 								<span className="truncate text-text-muted tr-text-metadata">{pillModel.name}</span>
 							) : null}
-							<span
-								data-testid="thinking-selector"
-								data-level={pillLevel}
-								className="flex shrink-0 items-center gap-4 text-text-muted tr-text-metadata capitalize"
-							>
-								<EffortBars
-									level={pillLevel}
-									levels={pillModel.thinkingLevels}
-									className={TONE_TEXT[levelTone(pillLevel)]}
-								/>
-								{pillLevel}
-							</span>
+							<EffortIndicator level={pillLevel} />
 							{hasKindGlyph(pillModel) ? (
 								<IconTooltip label={describeAuth(pillModel)} wrapTrigger>
 									<KindGlyph model={pillModel} className="text-text-muted" />
