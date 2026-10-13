@@ -418,7 +418,7 @@ function ProviderRowWithFlyout({
 			const mainPopupRect = mainPopup?.getBoundingClientRect();
 			const flyoutWidth = 280;
 			const flyoutMaxHeight = 280;
-			const gap = 0; // No gap - submenu attaches directly to main popup
+			const gap = -1; // Negative gap - borders overlap to appear merged
 
 			// Default: position to the right of the main popup (not the row)
 			let left = mainPopupRect ? mainPopupRect.right + gap : rowRect.right + gap;
