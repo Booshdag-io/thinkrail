@@ -141,7 +141,7 @@ const TONE_TEXT: Record<LevelTone, string> = {
 /** The visible effort levels (off is hidden but preserved if the model supports it). */
 const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
 
-/** The effort segmented control with shared background container. */
+/** The effort segmented control with shared background container filling remaining space. */
 function EffortSegmentedControl({
 	level,
 	levels,
@@ -162,10 +162,10 @@ function EffortSegmentedControl({
 			data-testid="thinking-section"
 			className="flex shrink-0 items-center gap-8 border-border-default border-t px-12 py-8"
 		>
-			<span className="tr-text-eyebrow text-text-muted">EFFORT</span>
-			<div className="flex items-center rounded-sm bg-control-bg p-2">
+			<span className="shrink-0 tr-text-eyebrow text-text-subtle">EFFORT</span>
+			<div className="flex flex-1 items-center rounded-sm bg-control-bg p-2">
 				{showsOffIndicator ? (
-					<span className="rounded-sm bg-control-bg-selected px-8 py-2 text-text-default tr-text-metadata capitalize">
+					<span className="flex-1 rounded-sm bg-control-bg-selected px-8 py-2 text-center text-text-default tr-text-metadata capitalize">
 						off
 					</span>
 				) : null}
@@ -180,7 +180,7 @@ function EffortSegmentedControl({
 							data-level={candidate}
 							onClick={() => onSelectLevel(candidate)}
 							className={cn(
-								"rounded-sm px-8 py-2 tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+								"flex-1 rounded-sm px-8 py-2 text-center tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
 								active
 									? "bg-control-bg-selected text-text-default"
 									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
@@ -307,9 +307,14 @@ function RowIconButton({
 	);
 }
 
-/** Section label styled as uppercase secondary text. */
+/** Section label styled as uppercase secondary text, matching model-count color. */
 function SectionLabel({ children }: { children: React.ReactNode }) {
-	return <span className="tr-text-eyebrow text-text-muted">{children}</span>;
+	return <span className="tr-text-eyebrow text-text-subtle">{children}</span>;
+}
+
+/** Inset divider aligned with content padding. */
+function GroupDivider() {
+	return <div className="mx-8 my-4 h-px bg-border-muted" />;
 }
 
 export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffortPickerProps>(
@@ -575,86 +580,98 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								</CommandGroup>
 							) : null}
 							{preferences.favorites.length > 0 ? (
-								<CommandGroup heading={<SectionLabel>PINNED</SectionLabel>}>
-									{preferences.favorites.map((m) => renderModel(m, "pinned"))}
-								</CommandGroup>
+								<>
+									{defaultOption ? <GroupDivider /> : null}
+									<CommandGroup heading={<SectionLabel>PINNED</SectionLabel>}>
+										{preferences.favorites.map((m) => renderModel(m, "pinned"))}
+									</CommandGroup>
+								</>
 							) : null}
 							{preferences.recents.length > 0 ? (
-								<CommandGroup heading={<SectionLabel>RECENT</SectionLabel>}>
-									{preferences.recents.map((m) => renderModel(m, "recent"))}
-								</CommandGroup>
+								<>
+									{defaultOption || preferences.favorites.length > 0 ? <GroupDivider /> : null}
+									<CommandGroup heading={<SectionLabel>RECENT</SectionLabel>}>
+										{preferences.recents.map((m) => renderModel(m, "recent"))}
+									</CommandGroup>
+								</>
 							) : null}
 							{folded ? (
-								<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
-									<CommandItem
-										value="all:models"
-										data-testid="model-show-all"
-										onSelect={() => setShowAll(true)}
-										className="items-start gap-8 py-4 text-text-muted"
-									>
-										<ChevronRight className="mt-2 size-12 shrink-0" />
-										<span className="flex min-w-0 flex-1 flex-col">
-											<span>Show all</span>
-											<span className="truncate tr-text-metadata">
-												{rawGroups.map((g) => g.provider).join(" · ")} · {models.length}
+								<>
+									{defaultOption || shortlist ? <GroupDivider /> : null}
+									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
+										<CommandItem
+											value="all:models"
+											data-testid="model-show-all"
+											onSelect={() => setShowAll(true)}
+											className="items-start gap-8 py-4 text-text-muted"
+										>
+											<ChevronRight className="mt-2 size-12 shrink-0" />
+											<span className="flex min-w-0 flex-1 flex-col">
+												<span>Show all</span>
+												<span className="truncate tr-text-metadata">
+													{rawGroups.map((g) => g.provider).join(" · ")} · {models.length}
+												</span>
 											</span>
-										</span>
-									</CommandItem>
-								</CommandGroup>
+										</CommandItem>
+									</CommandGroup>
+								</>
 							) : isSearching ? (
 								// When searching, show all matching models without provider grouping
 								rawGroups.map((group) => group.models.map((m) => renderModel(m, "all")))
 							) : (
 								// Expanded view with collapsible provider groups
-								<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
-									{shortlist ? (
-										<CommandItem
-											value="all:collapse"
-											data-testid="model-collapse-all"
-											onSelect={() => setShowAll(false)}
-											className="items-start gap-8 py-4 text-text-muted"
-										>
-											<ChevronDown className="mt-2 size-12 shrink-0" />
-											<span>Hide all</span>
-										</CommandItem>
-									) : null}
-									{rawGroups.map((group) => {
-										const isExpanded = expandedProviders.has(group.provider);
-										// Filter out models already shown in Pinned or Recent
-										const uniqueModels = group.models.filter(
-											(m) => !pinnedKeys.has(modelKey(m)) && !recentKeys.has(modelKey(m)),
-										);
-										return (
-											<div key={group.provider}>
-												<CommandItem
-													value={`provider:${group.provider}`}
-													data-testid="provider-group-header"
-													data-provider={group.provider}
-													onSelect={() => toggleProvider(group.provider)}
-													className="items-center gap-8 py-4"
-												>
-													{isExpanded ? (
-														<ChevronDown className="size-12 shrink-0 text-text-muted" />
-													) : (
-														<ChevronRight className="size-12 shrink-0 text-text-muted" />
-													)}
-													<span className="flex min-w-0 flex-1 items-center gap-8">
-														<span className="truncate">{group.provider}</span>
-														<span className="text-text-subtle tr-text-metadata">
-															{group.models.length}
+								<>
+									{defaultOption || shortlist ? <GroupDivider /> : null}
+									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
+										{shortlist ? (
+											<CommandItem
+												value="all:collapse"
+												data-testid="model-collapse-all"
+												onSelect={() => setShowAll(false)}
+												className="items-start gap-8 py-4 text-text-muted"
+											>
+												<ChevronDown className="mt-2 size-12 shrink-0" />
+												<span>Hide all</span>
+											</CommandItem>
+										) : null}
+										{rawGroups.map((group) => {
+											const isExpanded = expandedProviders.has(group.provider);
+											// Filter out models already shown in Pinned or Recent
+											const uniqueModels = group.models.filter(
+												(m) => !pinnedKeys.has(modelKey(m)) && !recentKeys.has(modelKey(m)),
+											);
+											return (
+												<div key={group.provider}>
+													<CommandItem
+														value={`provider:${group.provider}`}
+														data-testid="provider-group-header"
+														data-provider={group.provider}
+														onSelect={() => toggleProvider(group.provider)}
+														className="items-center gap-8 py-4"
+													>
+														{isExpanded ? (
+															<ChevronDown className="size-12 shrink-0 text-text-muted" />
+														) : (
+															<ChevronRight className="size-12 shrink-0 text-text-muted" />
+														)}
+														<span className="flex min-w-0 flex-1 items-center gap-8">
+															<span className="truncate">{group.provider}</span>
+															<span className="text-text-subtle tr-text-metadata">
+																{group.models.length}
+															</span>
 														</span>
-													</span>
-													{group.auth ? (
-														<span className="truncate text-text-subtle tr-text-metadata">
-															{group.auth}
-														</span>
-													) : null}
-												</CommandItem>
-												{isExpanded ? uniqueModels.map((m) => renderModel(m, "all")) : null}
-											</div>
-										);
-									})}
-								</CommandGroup>
+														{group.auth ? (
+															<span className="truncate text-text-subtle tr-text-metadata">
+																{group.auth}
+															</span>
+														) : null}
+													</CommandItem>
+													{isExpanded ? uniqueModels.map((m) => renderModel(m, "all")) : null}
+												</div>
+											);
+										})}
+									</CommandGroup>
+								</>
 							)}
 						</CommandList>
 					</Command>
