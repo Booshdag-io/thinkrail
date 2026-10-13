@@ -718,7 +718,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					) : pillModel ? (
 						<ProviderGlyph provider={pillModel.provider} className="size-14 text-text-muted" />
 					) : null}
-					<span className="truncate">
+					<span className="truncate text-text-muted">
 						{defaultOption?.active ? "Default" : (pillModel?.name ?? "Select model")}
 					</span>
 					{pillModel ? (
