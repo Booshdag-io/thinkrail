@@ -8,8 +8,6 @@ import {
 	RiRefreshLine as RefreshCw,
 	RiRadioButtonFill,
 	RiRadioButtonLine,
-	RiStopFill,
-	RiStopLine,
 	RiSparkling2Line as Sparkles,
 	RiUnpinLine as UnpinLine,
 } from "@remixicon/react";
@@ -111,7 +109,7 @@ function KindGlyph({ model, className }: { model: WireModel; className?: string 
 /** Effort level display names for accessibility. */
 const EFFORT_LABELS: Record<ThinkingLevel, string> = {
 	off: "Off",
-	minimal: "Minimal",
+	minimal: "Minimum",
 	low: "Low",
 	medium: "Medium",
 	high: "High",
@@ -119,31 +117,59 @@ const EFFORT_LABELS: Record<ThinkingLevel, string> = {
 	max: "Maximum",
 };
 
-/** Compact effort indicator icon for the collapsed model pill. */
+/** Map effort level to number of filled bars (1-4). */
+function effortBarCount(level: ThinkingLevel): number {
+	switch (level) {
+		case "off":
+		case "minimal":
+			return 1;
+		case "low":
+			return 2;
+		case "medium":
+			return 3;
+		case "high":
+		case "xhigh":
+		case "max":
+			return 4;
+	}
+}
+
+/** Four-bar effort indicator. Filled bars use text color; High uses green for all bars. */
+function EffortBars({ level, className }: { level: ThinkingLevel; className?: string }) {
+	const filledCount = effortBarCount(level);
+	const isHigh = level === "high" || level === "xhigh" || level === "max";
+	const filledColor = isHigh ? "bg-feedback-success" : "bg-current";
+
+	return (
+		<span aria-hidden className={cn("inline-flex h-10 shrink-0 items-end gap-1", className)}>
+			{[0, 1, 2, 3].map((i) => (
+				<span
+					key={i}
+					className={cn(
+						"h-full w-3 rounded-xs",
+						i < filledCount ? filledColor : "bg-text-subtle opacity-30",
+					)}
+				/>
+			))}
+		</span>
+	);
+}
+
+/** Compact effort indicator for the collapsed model pill with tooltip. */
 function EffortIndicator({ level }: { level: ThinkingLevel }) {
-	// Icon and color based on effort level:
-	// - Off/Minimal: square-line, muted
-	// - Low: square-line, default text
-	// - Medium: square-fill, default text
-	// - High/XHigh/Max: square-fill, success green (design system uses feedback colors for effort tones)
-	const isLowEffort = level === "off" || level === "minimal" || level === "low";
-	const isHighEffort = level === "high" || level === "xhigh" || level === "max";
-	const Icon = isLowEffort ? RiStopLine : RiStopFill;
-	const colorClass =
-		level === "minimal" || level === "off"
-			? "text-text-muted"
-			: isHighEffort
-				? "text-feedback-success"
-				: "text-text-default";
+	const isHigh = level === "high" || level === "xhigh" || level === "max";
 
 	return (
 		<IconTooltip label={`Effort: ${EFFORT_LABELS[level]}`}>
 			<span
 				data-testid="effort-indicator"
 				data-level={level}
-				className={cn("flex shrink-0 items-center", colorClass)}
+				className={cn(
+					"flex shrink-0 items-center",
+					isHigh ? "text-feedback-success" : "text-text-default",
+				)}
 			>
-				<Icon className="size-12" />
+				<EffortBars level={level} />
 			</span>
 		</IconTooltip>
 	);
@@ -182,6 +208,7 @@ function EffortSegmentedControl({
 				) : null}
 				{visibleLevels.map((candidate) => {
 					const active = candidate === level;
+					const isHigh = candidate === "high" || candidate === "xhigh" || candidate === "max";
 					return (
 						<button
 							key={candidate}
@@ -191,13 +218,15 @@ function EffortSegmentedControl({
 							data-level={candidate}
 							onClick={() => onSelectLevel(candidate)}
 							className={cn(
-								"flex-1 rounded-sm px-8 py-2 text-center tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+								"flex flex-1 items-center justify-center gap-4 rounded-sm px-6 py-2 tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
 								active
 									? "bg-control-bg-selected text-text-default"
 									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
+								active && isHigh && "text-feedback-success",
 							)}
 						>
-							{candidate}
+							<EffortBars level={candidate} />
+							<span>{candidate === "minimal" ? "minimum" : candidate}</span>
 						</button>
 					);
 				})}
@@ -529,12 +558,12 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(360px,calc(100vw-16px))] flex-col p-0"
 				>
 					<Command className="min-h-0 flex-1 bg-transparent">
-						<div className="flex items-center border-border-default border-b">
+						<div className="flex items-center gap-4 border-border-default border-b pr-8">
 							<CommandInput
 								placeholder="Search model"
 								value={query}
 								onValueChange={setQuery}
-								className="flex-1 border-none"
+								className="min-w-0 flex-1 border-none"
 							/>
 							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
 								<button
@@ -543,7 +572,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 									data-refreshing={refreshing}
 									disabled={refreshing}
 									onClick={() => onRefresh(true)}
-									className="mr-8 flex size-24 shrink-0 items-center justify-center rounded-sm text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent"
+									className="flex size-24 shrink-0 items-center justify-center rounded-sm text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent"
 								>
 									<RefreshCw className={cn("size-14", refreshing && "animate-spin")} />
 								</button>
