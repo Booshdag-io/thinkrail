@@ -180,8 +180,19 @@ function EffortIndicator({ level }: { level: ThinkingLevel }) {
 	);
 }
 
-/** The visible effort levels (off is hidden but preserved if the model supports it). */
-const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
+/** The visible effort levels including off when the model supports it. */
+const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["off", "minimal", "low", "medium", "high"];
+
+/** Effort level descriptions shown next to the heading. */
+const EFFORT_DESCRIPTIONS: Record<ThinkingLevel, string> = {
+	off: "No reasoning · Fastest · Cheapest",
+	minimal: "Briefest reasoning",
+	low: "Light reasoning",
+	medium: "Balanced reasoning",
+	high: "Deep reasoning",
+	xhigh: "Extended reasoning",
+	max: "Maximum reasoning",
+};
 
 /** The effort segmented control with label on its own line and switcher below. */
 function EffortSegmentedControl({
@@ -196,21 +207,18 @@ function EffortSegmentedControl({
 	// Filter to visible levels that the model supports
 	const visibleLevels = useMemo(() => VISIBLE_LEVELS.filter((l) => levels.includes(l)), [levels]);
 
-	// If the current level is "off" (hidden but valid), show it as an indicator but not selectable
-	const showsOffIndicator = level === "off" && levels.includes("off");
+	const description = EFFORT_DESCRIPTIONS[level] ?? "";
 
 	return (
 		<div
 			data-testid="thinking-section"
 			className="flex shrink-0 flex-col gap-12 border-border-default border-t px-12 pt-12 pb-12"
 		>
-			<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
+			<div className="flex items-center justify-between">
+				<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
+				<span className="tr-text-metadata text-text-muted">{description}</span>
+			</div>
 			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
-				{showsOffIndicator ? (
-					<span className="flex-1 rounded-sm bg-control-bg-selected px-8 py-2 text-center text-text-default tr-text-metadata capitalize">
-						off
-					</span>
-				) : null}
 				{visibleLevels.map((candidate) => {
 					const active = candidate === level;
 					return (
@@ -228,7 +236,7 @@ function EffortSegmentedControl({
 									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
 							)}
 						>
-							{candidate === "minimal" ? "Minimum" : candidate}
+							{candidate === "minimal" ? "Minimum" : candidate === "off" ? "Off" : candidate}
 						</button>
 					);
 				})}
@@ -821,7 +829,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								// Provider rows with flyouts - shows all providers with models on hover
 								<>
 									{defaultOption || shortlist ? <GroupDivider /> : null}
-									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
+									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>} className="pb-12">
 										{sortedGroups.map((group) => {
 											// Filter out models already shown in Pinned or Recent
 											const uniqueModels = group.models.filter(
