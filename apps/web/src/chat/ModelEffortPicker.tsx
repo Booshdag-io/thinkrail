@@ -218,7 +218,7 @@ function EffortSegmentedControl({
 				<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
 				<span className="tr-text-metadata text-text-subtle">{description}</span>
 			</div>
-			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
+			<div className="flex w-full items-center rounded-sm border border-border-muted p-2">
 				{visibleLevels.map((candidate) => {
 					const active = candidate === level;
 					return (
