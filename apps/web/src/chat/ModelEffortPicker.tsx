@@ -6,10 +6,10 @@ import {
 	RiArrowRightSLine as ChevronRight,
 	RiInfinityLine as InfinityMark,
 	RiKey2Line as Key,
-	RiPushpinFill as PinFill,
 	RiPushpinLine as PinLine,
 	RiRefreshLine as RefreshCw,
 	RiSparkling2Line as Sparkles,
+	RiUnpinLine as UnpinLine,
 } from "@remixicon/react";
 import {
 	type ModelDefault,
@@ -35,12 +35,12 @@ import {
 	describeAuth,
 	EFFORT_BAR_HEIGHTS,
 	formatContext,
-	groupByProvider,
 	kindLabel,
 	type LevelTone,
 	levelTone,
 	litBars,
 	modelKey,
+	type ProviderGroup,
 	trailingLevel,
 } from "./modelPicker";
 import { ProviderGlyph } from "./ProviderGlyph";
@@ -141,7 +141,7 @@ const TONE_TEXT: Record<LevelTone, string> = {
 /** The visible effort levels (off is hidden but preserved if the model supports it). */
 const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
 
-/** The effort segmented control with the same style as ToggleSegment in Settings. */
+/** The effort segmented control with shared background container. */
 function EffortSegmentedControl({
 	level,
 	levels,
@@ -160,10 +160,10 @@ function EffortSegmentedControl({
 	return (
 		<div
 			data-testid="thinking-section"
-			className="flex shrink-0 flex-col gap-8 border-border-default border-t px-12 py-8"
+			className="flex shrink-0 items-center gap-8 border-border-default border-t px-12 py-8"
 		>
-			<span className="text-text-muted tr-text-metadata">Effort</span>
-			<div className="flex items-center gap-4">
+			<span className="tr-text-eyebrow text-text-muted">EFFORT</span>
+			<div className="flex items-center rounded-sm bg-control-bg p-2">
 				{showsOffIndicator ? (
 					<span className="rounded-sm bg-control-bg-selected px-8 py-2 text-text-default tr-text-metadata capitalize">
 						off
@@ -223,6 +223,7 @@ function RowMeta({ model, withProvider }: { model: WireModel; withProvider: bool
 /** Maps provider IDs to display names for readability. */
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 	openai: "OpenAI",
+	"openai-codex": "OpenAI",
 	anthropic: "Anthropic",
 	google: "Google",
 	mistral: "Mistral",
@@ -237,6 +238,78 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 
 function getProviderDisplayName(provider: string): string {
 	return PROVIDER_DISPLAY_NAMES[provider.toLowerCase()] ?? provider;
+}
+
+/** Groups providers with the same display name under one heading while preserving distinct provider IDs. */
+function groupByDisplayName(groups: ProviderGroup[]): ProviderGroup[] {
+	const merged = new Map<string, ProviderGroup>();
+	for (const group of groups) {
+		const displayName = getProviderDisplayName(group.provider);
+		const existing = merged.get(displayName);
+		if (existing) {
+			// Merge models and keep auth from first group that has one
+			existing.models = [...existing.models, ...group.models];
+			if (!existing.auth && group.auth) {
+				existing.auth = group.auth;
+			}
+		} else {
+			// Create new group with display name as the key
+			merged.set(displayName, {
+				provider: displayName,
+				models: [...group.models],
+				auth: group.auth,
+			});
+		}
+	}
+	return [...merged.values()];
+}
+
+/** Icon button for row-level actions (set-default, pin/unpin). */
+function RowIconButton({
+	testId,
+	label,
+	active,
+	disabled,
+	alwaysVisible,
+	onClick,
+	children,
+}: {
+	testId: string;
+	label: string;
+	active?: boolean;
+	disabled?: boolean;
+	alwaysVisible?: boolean;
+	onClick: (event: React.MouseEvent) => void;
+	children: React.ReactNode;
+}) {
+	return (
+		<IconTooltip label={label}>
+			<button
+				type="button"
+				data-testid={testId}
+				data-active={active}
+				aria-label={label}
+				aria-pressed={active}
+				disabled={disabled}
+				onClick={onClick}
+				className={cn(
+					"flex size-20 shrink-0 items-center justify-center rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary disabled:text-control-disabled-text",
+					active
+						? "text-primary"
+						: alwaysVisible
+							? "text-text-subtle hover:bg-control-bg-hovered hover:text-text-default"
+							: "text-text-subtle opacity-0 hover:bg-control-bg-hovered hover:text-text-default group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
+				)}
+			>
+				{children}
+			</button>
+		</IconTooltip>
+	);
+}
+
+/** Section label styled as uppercase secondary text. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+	return <span className="tr-text-eyebrow text-text-muted">{children}</span>;
 }
 
 export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffortPickerProps>(
@@ -275,7 +348,21 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 			// Don't reset showAll or expandedProviders to preserve user's navigation state
 		};
 
-		const groups = useMemo(() => groupByProvider(models), [models]);
+		// Group models by provider, then merge providers with same display name
+		const rawGroups = useMemo(() => {
+			const groups = new Map<string, WireModel[]>();
+			for (const model of models) {
+				const list = groups.get(model.provider);
+				if (list) list.push(model);
+				else groups.set(model.provider, [model]);
+			}
+			const providerGroups: ProviderGroup[] = [...groups].map(([provider, list]) => ({
+				provider,
+				models: list,
+				auth: list.map(describeAuth).find((auth) => auth !== null) ?? null,
+			}));
+			return groupByDisplayName(providerGroups);
+		}, [models]);
 
 		// Create a set of pinned and recent model keys to avoid duplicates
 		const pinnedKeys = useMemo(
@@ -343,59 +430,39 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 						<RowMeta model={model} withProvider={section !== "all"} />
 					</span>
 					{preferences.supported ? (
-						<span className="mt-2 flex shrink-0 items-center gap-4">
+						<span className="mt-2 flex shrink-0 items-center gap-2">
 							{/* Set as default action */}
-							<IconTooltip label={isDefaultModel ? "Default for new chats" : "Set as default"}>
-								<button
-									type="button"
-									data-testid="model-set-default"
-									data-default={isDefaultModel}
-									aria-label={
-										isDefaultModel ? "Default for new chats" : `Set ${model.name} as default`
+							<RowIconButton
+								testId="model-set-default"
+								label={isDefaultModel ? "Default for new chats" : "Set as default"}
+								active={isDefaultModel}
+								disabled={isDefaultModel}
+								onClick={(event) => {
+									event.stopPropagation();
+									if (!isDefaultModel) {
+										preferences.setDefault(model, level);
 									}
-									disabled={isDefaultModel}
-									onClick={(event) => {
-										event.stopPropagation();
-										if (!isDefaultModel) {
-											preferences.setDefault(model, level);
-										}
-									}}
-									className={cn(
-										"flex size-16 shrink-0 items-center justify-center rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
-										isDefaultModel
-											? "text-primary"
-											: "text-text-subtle opacity-0 hover:bg-control-bg-hovered group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
-									)}
-								>
-									{isDefaultModel ? (
-										<CheckCircleFill className="size-12" />
-									) : (
-										<CheckCircleLine className="size-12" />
-									)}
-								</button>
-							</IconTooltip>
+								}}
+							>
+								{isDefaultModel ? (
+									<CheckCircleFill className="size-14" />
+								) : (
+									<CheckCircleLine className="size-14" />
+								)}
+							</RowIconButton>
 							{/* Pin/unpin action */}
-							<IconTooltip label={pinned ? "Unpin" : "Pin"}>
-								<button
-									type="button"
-									data-testid="model-pin-toggle"
-									data-pinned={pinned}
-									aria-label={pinned ? `Unpin ${model.name}` : `Pin ${model.name}`}
-									aria-pressed={pinned}
-									onClick={(event) => {
-										event.stopPropagation();
-										preferences.toggleFavorite(model);
-									}}
-									className={cn(
-										"flex size-16 shrink-0 items-center justify-center rounded-sm outline-none transition-colors hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
-										pinned
-											? "text-primary"
-											: "text-text-subtle opacity-0 group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
-									)}
-								>
-									{pinned ? <PinFill className="size-12" /> : <PinLine className="size-12" />}
-								</button>
-							</IconTooltip>
+							<RowIconButton
+								testId="model-pin-toggle"
+								label={pinned ? "Unpin" : "Pin"}
+								active={pinned}
+								alwaysVisible={pinned}
+								onClick={(event) => {
+									event.stopPropagation();
+									preferences.toggleFavorite(model);
+								}}
+							>
+								{pinned ? <UnpinLine className="size-14" /> : <PinLine className="size-14" />}
+							</RowIconButton>
 						</span>
 					) : null}
 				</CommandItem>
@@ -459,7 +526,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					<Command className="min-h-0 flex-1 bg-transparent">
 						<div className="flex items-center border-border-default border-b">
 							<CommandInput
-								placeholder="Search models… (append a level: opus high)"
+								placeholder="Search model"
 								value={query}
 								onValueChange={setQuery}
 								className="flex-1 border-none"
@@ -508,17 +575,17 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								</CommandGroup>
 							) : null}
 							{preferences.favorites.length > 0 ? (
-								<CommandGroup heading="Pinned">
+								<CommandGroup heading={<SectionLabel>PINNED</SectionLabel>}>
 									{preferences.favorites.map((m) => renderModel(m, "pinned"))}
 								</CommandGroup>
 							) : null}
 							{preferences.recents.length > 0 ? (
-								<CommandGroup heading="Recent">
+								<CommandGroup heading={<SectionLabel>RECENT</SectionLabel>}>
 									{preferences.recents.map((m) => renderModel(m, "recent"))}
 								</CommandGroup>
 							) : null}
 							{folded ? (
-								<CommandGroup>
+								<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
 									<CommandItem
 										value="all:models"
 										data-testid="model-show-all"
@@ -527,43 +594,38 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 									>
 										<ChevronRight className="mt-2 size-12 shrink-0" />
 										<span className="flex min-w-0 flex-1 flex-col">
-											<span>All models</span>
+											<span>Show all</span>
 											<span className="truncate tr-text-metadata">
-												{groups.map((g) => getProviderDisplayName(g.provider)).join(" · ")} ·{" "}
-												{models.length}
+												{rawGroups.map((g) => g.provider).join(" · ")} · {models.length}
 											</span>
 										</span>
 									</CommandItem>
 								</CommandGroup>
 							) : isSearching ? (
 								// When searching, show all matching models without provider grouping
-								groups.map((group) => group.models.map((m) => renderModel(m, "all")))
+								rawGroups.map((group) => group.models.map((m) => renderModel(m, "all")))
 							) : (
 								// Expanded view with collapsible provider groups
-								<>
+								<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
 									{shortlist ? (
-										<CommandGroup>
-											<CommandItem
-												value="all:collapse"
-												data-testid="model-collapse-all"
-												onSelect={() => setShowAll(false)}
-												className="items-start gap-8 py-4 text-text-muted"
-											>
-												<ChevronDown className="mt-2 size-12 shrink-0" />
-												<span>All models</span>
-											</CommandItem>
-										</CommandGroup>
+										<CommandItem
+											value="all:collapse"
+											data-testid="model-collapse-all"
+											onSelect={() => setShowAll(false)}
+											className="items-start gap-8 py-4 text-text-muted"
+										>
+											<ChevronDown className="mt-2 size-12 shrink-0" />
+											<span>Hide all</span>
+										</CommandItem>
 									) : null}
-									{groups.map((group) => {
+									{rawGroups.map((group) => {
 										const isExpanded = expandedProviders.has(group.provider);
 										// Filter out models already shown in Pinned or Recent
 										const uniqueModels = group.models.filter(
 											(m) => !pinnedKeys.has(modelKey(m)) && !recentKeys.has(modelKey(m)),
 										);
-										// If all models are already shown elsewhere, still show the provider but with indication
-										const displayName = getProviderDisplayName(group.provider);
 										return (
-											<CommandGroup key={group.provider}>
+											<div key={group.provider}>
 												<CommandItem
 													value={`provider:${group.provider}`}
 													data-testid="provider-group-header"
@@ -577,7 +639,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 														<ChevronRight className="size-12 shrink-0 text-text-muted" />
 													)}
 													<span className="flex min-w-0 flex-1 items-center gap-8">
-														<span className="truncate">{displayName}</span>
+														<span className="truncate">{group.provider}</span>
 														<span className="text-text-subtle tr-text-metadata">
 															{group.models.length}
 														</span>
@@ -589,10 +651,10 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 													) : null}
 												</CommandItem>
 												{isExpanded ? uniqueModels.map((m) => renderModel(m, "all")) : null}
-											</CommandGroup>
+											</div>
 										);
 									})}
-								</>
+								</CommandGroup>
 							)}
 						</CommandList>
 					</Command>

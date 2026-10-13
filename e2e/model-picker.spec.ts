@@ -76,7 +76,7 @@ test("the composer pill stars a favorite, records it as recent, and saves the pa
 		await expect
 			.poll(async () => (await readConfig(page)).favoriteModels.map((m) => m.id))
 			.toEqual(["e2e-central-model"]);
-		await expect(page.locator("[cmdk-group-heading]", { hasText: "Pinned" })).toBeVisible();
+		await expect(page.locator("[cmdk-group-heading]", { hasText: "PINNED" })).toBeVisible();
 		await expect(page.getByTestId("model-show-all")).toBeVisible();
 
 		await option.click();
