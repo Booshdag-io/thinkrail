@@ -216,7 +216,7 @@ function EffortSegmentedControl({
 		>
 			<div className="flex items-center justify-between">
 				<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
-				<span className="tr-text-metadata text-text-muted">{description}</span>
+				<span className="tr-text-metadata text-text-subtle">{description}</span>
 			</div>
 			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
 				{visibleLevels.map((candidate) => {
@@ -249,7 +249,7 @@ function RowMeta({ model, withProvider }: { model: WireModel; withProvider: bool
 	const kind = kindLabel(model);
 	const cost = costLabel(model);
 	return (
-		<span className="mt-2 flex min-w-0 items-center gap-4 truncate text-text-muted tr-text-metadata">
+		<span className="mt-2 flex min-w-0 items-center gap-4 truncate text-text-subtle tr-text-metadata">
 			{withProvider ? <span className="shrink-0">{model.provider}</span> : null}
 			{kind ? (
 				<>
@@ -548,7 +548,7 @@ function ProviderRowWithFlyout({
 							}}
 							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
-							<Command className="bg-transparent">
+							<Command className="bg-transparent text-text-muted">
 								<CommandList className="max-h-[280px] p-12 space-y-2 [&_[cmdk-item]]:py-4">
 									{models.map((m) => renderModel(m))}
 								</CommandList>
@@ -747,7 +747,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					{pillModel ? (
 						<>
 							{defaultOption?.active ? (
-								<span className="truncate text-text-muted tr-text-metadata">{pillModel.name}</span>
+								<span className="truncate text-text-subtle tr-text-metadata">{pillModel.name}</span>
 							) : null}
 							<EffortIndicator level={pillLevel} />
 						</>
@@ -760,7 +760,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					container={container}
 					className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(360px,calc(100vw-16px))] flex-col p-0"
 				>
-					<Command className="min-h-0 flex-1 bg-transparent">
+					<Command className="min-h-0 flex-1 bg-transparent text-text-muted">
 						<div className="flex items-center border-border-default border-b [&>div]:min-w-0 [&>div]:flex-1 [&>div]:border-none">
 							<CommandInput placeholder="Search model" value={query} onValueChange={setQuery} />
 							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
@@ -797,7 +797,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 										<Sparkles className="mt-2 size-12 shrink-0 text-text-muted" />
 										<span className="flex min-w-0 flex-1 flex-col">
 											<span>Default</span>
-											<span className="truncate text-text-muted tr-text-metadata">
+											<span className="truncate text-text-subtle tr-text-metadata">
 												{defaultOption.resolved?.model
 													? `Follows Settings → Models · ${defaultOption.resolved.model.name} · ${defaultOption.resolved.thinkingLevel}`
 													: "Follows Settings → Models"}
