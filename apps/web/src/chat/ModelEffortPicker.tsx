@@ -1,22 +1,15 @@
 import {
 	RiBracesLine as Braces,
-	RiCheckLine as Check,
+	RiCheckboxCircleFill as CheckCircleFill,
+	RiCheckboxCircleLine as CheckCircleLine,
 	RiArrowDownSLine as ChevronDown,
 	RiArrowRightSLine as ChevronRight,
-	RiFireLine as Fire,
-	RiFlashlightLine as Flash,
-	RiContrastDrop2Line as HalfDrop,
 	RiInfinityLine as InfinityMark,
 	RiKey2Line as Key,
-	RiLeafLine as Leaf,
-	RiPushpin2Line as Pin,
+	RiPushpinFill as PinFill,
+	RiPushpinLine as PinLine,
 	RiRefreshLine as RefreshCw,
-	type RemixiconComponentType,
-	RiSparklingLine as Sparkle,
 	RiSparkling2Line as Sparkles,
-	RiStarFill as StarFill,
-	RiStarLine as StarLine,
-	RiZzzLine as Zzz,
 } from "@remixicon/react";
 import {
 	type ModelDefault,
@@ -35,19 +28,16 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@thinkrail/ui/popover";
 import { IconTooltip } from "@thinkrail/ui/tooltip";
 import { cn } from "@thinkrail/ui/utils";
-import { type CSSProperties, forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
 import {
 	CENTRAL_KIND_TAG,
-	COSTLY_LEVELS,
 	costLabel,
 	describeAuth,
 	EFFORT_BAR_HEIGHTS,
 	formatContext,
 	groupByProvider,
 	kindLabel,
-	LEVEL_HINT,
 	type LevelTone,
-	levelPosition,
 	levelTone,
 	litBars,
 	modelKey,
@@ -148,150 +138,58 @@ const TONE_TEXT: Record<LevelTone, string> = {
 	hot: "text-feedback-warning",
 };
 
-/**
- * The rail between two adjacent levels: solid within a tone, a blend where the tone changes. Tones
- * only ever warm up along a model's levels, so the cooling pairs just stay solid.
- */
-const TONE_SEGMENT: Record<`${LevelTone}>${LevelTone}`, string> = {
-	"cool>cool": "bg-feedback-info",
-	"cool>accent": "bg-[linear-gradient(90deg,var(--feedback-info),var(--primary))]",
-	"cool>hot": "bg-[linear-gradient(90deg,var(--feedback-info),var(--feedback-warning))]",
-	"accent>cool": "bg-primary",
-	"accent>accent": "bg-primary",
-	"accent>hot": "bg-[linear-gradient(90deg,var(--primary),var(--feedback-warning))]",
-	"hot>cool": "bg-feedback-warning",
-	"hot>accent": "bg-feedback-warning",
-	"hot>hot": "bg-feedback-warning",
-};
+/** The visible effort levels (off is hidden but preserved if the model supports it). */
+const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
 
-const LEVEL_GLYPH: Record<ThinkingLevel, RemixiconComponentType> = {
-	off: Zzz,
-	minimal: Leaf,
-	low: Flash,
-	medium: HalfDrop,
-	high: Sparkles,
-	xhigh: Sparkle,
-	max: Fire,
-};
-
-/**
- * The effort slider: a thick rail hiding a cool→warm gradient that the handle uncovers as it moves,
- * with the level word riding on the handle. A native range input does the dragging, keyboard and
- * touch; the labels beneath are the same levels as buttons.
- */
-function EffortSlider({
-	model,
+/** The effort segmented control with the same style as ToggleSegment in Settings. */
+function EffortSegmentedControl({
 	level,
-	defaultLevel,
+	levels,
 	onSelectLevel,
 }: {
-	model: WireModel;
 	level: ThinkingLevel;
-	defaultLevel: ThinkingLevel | undefined;
+	levels: readonly ThinkingLevel[];
 	onSelectLevel: (level: ThinkingLevel) => void;
 }) {
-	const levels = model.thinkingLevels;
-	const index = levels.indexOf(level);
-	const Glyph = LEVEL_GLYPH[level];
+	// Filter to visible levels that the model supports
+	const visibleLevels = useMemo(() => VISIBLE_LEVELS.filter((l) => levels.includes(l)), [levels]);
+
+	// If the current level is "off" (hidden but valid), show it as an indicator but not selectable
+	const showsOffIndicator = level === "off" && levels.includes("off");
+
 	return (
 		<div
 			data-testid="thinking-section"
-			className="flex shrink-0 flex-col gap-4 border-border-default border-t px-12 pt-8 pb-4"
+			className="flex shrink-0 flex-col gap-8 border-border-default border-t px-12 py-8"
 		>
-			<div className="flex items-center gap-4 text-text-muted tr-text-metadata">
-				<span>Effort</span>
-				<span aria-hidden>·</span>
-				<span className="truncate">{model.name}</span>
-			</div>
-			<div
-				className="relative h-32"
-				style={{ "--effort": `${levelPosition(level, levels)}%` } as CSSProperties}
-			>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 top-8 h-14 overflow-hidden rounded-full border border-control-border-default bg-control-bg"
-				>
-					<div className="absolute inset-0 flex transition-[clip-path] duration-500 ease-[cubic-bezier(0.34,1.3,0.64,1)] [clip-path:inset(0_calc(100%-var(--effort))_0_0_round_999px)] motion-reduce:transition-none">
-						{levels.map((next, i) => {
-							const from = levels[i - 1];
-							return from ? (
-								<span
-									key={next}
-									className={cn("flex-1", TONE_SEGMENT[`${levelTone(from)}>${levelTone(next)}`])}
-								/>
-							) : null;
-						})}
-					</div>
-				</div>
-				<input
-					type="range"
-					min={0}
-					max={levels.length - 1}
-					step={1}
-					value={Math.max(0, index)}
-					aria-label={`Effort for ${model.name}`}
-					aria-valuetext={level}
-					data-testid="thinking-slider"
-					onChange={(event) => {
-						const next = levels[Number(event.target.value)];
-						if (next && next !== level) onSelectLevel(next);
-					}}
-					className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0"
-				/>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute top-2 left-[clamp(32px,var(--effort),calc(100%-32px))] flex h-24 min-w-64 -translate-x-1/2 items-center justify-center gap-4 rounded-full border border-control-border-active bg-container-elevated-bg px-8 text-text-default tr-text-label-pill capitalize shadow-[var(--shadow-sm)] transition-[left] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] peer-focus-visible:ring-2 peer-focus-visible:ring-primary motion-reduce:transition-none"
-				>
-					<Glyph className={cn("size-12 shrink-0", TONE_TEXT[levelTone(level)])} />
-					{level}
-				</div>
-			</div>
-			<div className="flex justify-between px-2">
-				{levels.map((candidate, i) => {
-					const active = candidate === level;
-					return (
-						<span
-							key={candidate}
-							className={cn(
-								"flex w-0",
-								i === 0
-									? "justify-start"
-									: i === levels.length - 1
-										? "justify-end"
-										: "justify-center",
-							)}
-						>
-							<button
-								type="button"
-								data-testid="thinking-option"
-								data-level={candidate}
-								aria-pressed={active}
-								onClick={() => onSelectLevel(candidate)}
-								className={cn(
-									"relative rounded-sm px-4 py-2 tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
-									active ? "text-text-default" : "text-text-subtle hover:text-text-muted",
-								)}
-							>
-								{candidate}
-								{candidate === defaultLevel ? (
-									<span
-										aria-hidden
-										className="-bottom-2 -translate-x-1/2 absolute left-1/2 size-4 rounded-full bg-primary-muted"
-									/>
-								) : null}
-							</button>
-						</span>
-					);
-				})}
-			</div>
-			<div className="flex items-center gap-8 text-text-subtle tr-text-metadata">
-				<span className="truncate">{LEVEL_HINT[level]}</span>
-				{COSTLY_LEVELS.has(level) ? (
-					<span className="flex shrink-0 items-center gap-4 text-feedback-warning">
-						<Flash className="size-12" />
-						uses your limits faster
+			<span className="text-text-muted tr-text-metadata">Effort</span>
+			<div className="flex items-center gap-4">
+				{showsOffIndicator ? (
+					<span className="rounded-sm bg-control-bg-selected px-8 py-2 text-text-default tr-text-metadata capitalize">
+						off
 					</span>
 				) : null}
+				{visibleLevels.map((candidate) => {
+					const active = candidate === level;
+					return (
+						<button
+							key={candidate}
+							type="button"
+							aria-pressed={active}
+							data-testid="thinking-option"
+							data-level={candidate}
+							onClick={() => onSelectLevel(candidate)}
+							className={cn(
+								"rounded-sm px-8 py-2 tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+								active
+									? "bg-control-bg-selected text-text-default"
+									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
+							)}
+						>
+							{candidate}
+						</button>
+					);
+				})}
 			</div>
 		</div>
 	);
@@ -322,8 +220,24 @@ function RowMeta({ model, withProvider }: { model: WireModel; withProvider: bool
 	);
 }
 
-const FOOTER_LINK =
-	"flex items-center gap-4 rounded-sm px-4 py-2 tr-text-metadata text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent";
+/** Maps provider IDs to display names for readability. */
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+	openai: "OpenAI",
+	anthropic: "Anthropic",
+	google: "Google",
+	mistral: "Mistral",
+	groq: "Groq",
+	together: "Together",
+	perplexity: "Perplexity",
+	fireworks: "Fireworks",
+	deepseek: "DeepSeek",
+	cohere: "Cohere",
+	xai: "xAI",
+};
+
+function getProviderDisplayName(provider: string): string {
+	return PROVIDER_DISPLAY_NAMES[provider.toLowerCase()] ?? provider;
+}
 
 export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffortPickerProps>(
 	function ModelEffortPicker(
@@ -345,6 +259,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const [open, setOpen] = useState(false);
 		const [query, setQuery] = useState("");
 		const [showAll, setShowAll] = useState(false);
+		const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
 		const openWith = (next: string) => {
 			setQuery(next);
@@ -357,12 +272,36 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const close = () => {
 			setOpen(false);
 			setQuery("");
-			setShowAll(false);
+			// Don't reset showAll or expandedProviders to preserve user's navigation state
 		};
 
 		const groups = useMemo(() => groupByProvider(models), [models]);
+
+		// Create a set of pinned and recent model keys to avoid duplicates
+		const pinnedKeys = useMemo(
+			() => new Set(preferences.favorites.map(modelKey)),
+			[preferences.favorites],
+		);
+		const recentKeys = useMemo(
+			() => new Set(preferences.recents.map(modelKey)),
+			[preferences.recents],
+		);
+
 		const shortlist = preferences.favorites.length > 0 || preferences.recents.length > 0;
-		const folded = shortlist && !showAll && query.trim() === "";
+		const isSearching = query.trim() !== "";
+		const folded = shortlist && !showAll && !isSearching;
+
+		const toggleProvider = (provider: string) => {
+			setExpandedProviders((prev) => {
+				const next = new Set(prev);
+				if (next.has(provider)) {
+					next.delete(provider);
+				} else {
+					next.add(provider);
+				}
+				return next;
+			});
+		};
 
 		const pickModel = (model: WireModel) => {
 			const typedLevel = trailingLevel(query, model);
@@ -380,8 +319,9 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		};
 
 		const renderModel = (model: WireModel, section: string) => {
-			const favorite = preferences.isFavorite(model);
+			const pinned = preferences.isFavorite(model);
 			const isCurrent = !defaultOption?.active && sameModel(model, current);
+			const isDefaultModel = preferences.isDefault(model, level);
 			return (
 				<CommandItem
 					key={`${section}:${modelKey(model)}`}
@@ -397,45 +337,72 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 						isCurrent && "bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 					)}
 				>
-					<ProviderGlyph provider={model.provider} className="mt-2 text-text-muted" />
+					<ProviderGlyph provider={model.provider} className="mt-2 size-12 text-text-muted" />
 					<span className="flex min-w-0 flex-1 flex-col">
 						<span className="truncate">{model.name}</span>
 						<RowMeta model={model} withProvider={section !== "all"} />
 					</span>
-					{isCurrent ? <Check className="mt-2 size-14 shrink-0 text-primary" /> : null}
 					{preferences.supported ? (
-						<button
-							type="button"
-							data-testid="model-favorite-toggle"
-							data-favorite={favorite}
-							aria-label={favorite ? `Unstar ${model.name}` : `Star ${model.name}`}
-							aria-pressed={favorite}
-							onClick={(event) => {
-								event.stopPropagation();
-								preferences.toggleFavorite(model);
-							}}
-							className={cn(
-								"mt-2 flex size-16 shrink-0 items-center justify-center rounded-sm outline-none transition-colors hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
-								favorite
-									? "text-feedback-warning"
-									: "text-text-subtle opacity-0 group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
-							)}
-						>
-							{favorite ? <StarFill className="size-12" /> : <StarLine className="size-12" />}
-						</button>
+						<span className="mt-2 flex shrink-0 items-center gap-4">
+							{/* Set as default action */}
+							<IconTooltip label={isDefaultModel ? "Default for new chats" : "Set as default"}>
+								<button
+									type="button"
+									data-testid="model-set-default"
+									data-default={isDefaultModel}
+									aria-label={
+										isDefaultModel ? "Default for new chats" : `Set ${model.name} as default`
+									}
+									disabled={isDefaultModel}
+									onClick={(event) => {
+										event.stopPropagation();
+										if (!isDefaultModel) {
+											preferences.setDefault(model, level);
+										}
+									}}
+									className={cn(
+										"flex size-16 shrink-0 items-center justify-center rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+										isDefaultModel
+											? "text-primary"
+											: "text-text-subtle opacity-0 hover:bg-control-bg-hovered group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
+									)}
+								>
+									{isDefaultModel ? (
+										<CheckCircleFill className="size-12" />
+									) : (
+										<CheckCircleLine className="size-12" />
+									)}
+								</button>
+							</IconTooltip>
+							{/* Pin/unpin action */}
+							<IconTooltip label={pinned ? "Unpin" : "Pin"}>
+								<button
+									type="button"
+									data-testid="model-pin-toggle"
+									data-pinned={pinned}
+									aria-label={pinned ? `Unpin ${model.name}` : `Pin ${model.name}`}
+									aria-pressed={pinned}
+									onClick={(event) => {
+										event.stopPropagation();
+										preferences.toggleFavorite(model);
+									}}
+									className={cn(
+										"flex size-16 shrink-0 items-center justify-center rounded-sm outline-none transition-colors hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
+										pinned
+											? "text-primary"
+											: "text-text-subtle opacity-0 group-hover/row:opacity-100 group-data-[selected=true]/row:opacity-100 focus-visible:opacity-100",
+									)}
+								>
+									{pinned ? <PinFill className="size-12" /> : <PinLine className="size-12" />}
+								</button>
+							</IconTooltip>
+						</span>
 					) : null}
 				</CommandItem>
 			);
 		};
 
 		const effortLevels = current?.thinkingLevels ?? [];
-		const isDefaultPair = current !== null && preferences.isDefault(current, level);
-		const resetLevel =
-			preferences.defaultEffort !== undefined &&
-			preferences.defaultEffort !== level &&
-			effortLevels.includes(preferences.defaultEffort)
-				? preferences.defaultEffort
-				: null;
 		const following = defaultOption?.active ? defaultOption.resolved : null;
 		const pillModel = defaultOption?.active ? (following?.model ?? null) : current;
 		const pillLevel = following?.thinkingLevel ?? level;
@@ -490,11 +457,26 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(360px,calc(100vw-16px))] flex-col p-0"
 				>
 					<Command className="min-h-0 flex-1 bg-transparent">
-						<CommandInput
-							placeholder="Search models… (append a level: opus high)"
-							value={query}
-							onValueChange={setQuery}
-						/>
+						<div className="flex items-center border-border-default border-b">
+							<CommandInput
+								placeholder="Search models… (append a level: opus high)"
+								value={query}
+								onValueChange={setQuery}
+								className="flex-1 border-none"
+							/>
+							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
+								<button
+									type="button"
+									data-testid="model-refresh"
+									data-refreshing={refreshing}
+									disabled={refreshing}
+									onClick={() => onRefresh(true)}
+									className="mr-8 flex size-24 shrink-0 items-center justify-center rounded-sm text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent"
+								>
+									<RefreshCw className={cn("size-14", refreshing && "animate-spin")} />
+								</button>
+							</IconTooltip>
+						</div>
 						<CommandList className="max-h-[340px] min-h-0 flex-1">
 							<CommandEmpty>No models found.</CommandEmpty>
 							{defaultOption ? (
@@ -513,7 +495,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 												"bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 										)}
 									>
-										<Sparkles className="mt-2 size-16 shrink-0 text-text-muted" />
+										<Sparkles className="mt-2 size-12 shrink-0 text-text-muted" />
 										<span className="flex min-w-0 flex-1 flex-col">
 											<span>Default</span>
 											<span className="truncate text-text-muted tr-text-metadata">
@@ -522,15 +504,12 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 													: "Follows Settings → Models"}
 											</span>
 										</span>
-										{defaultOption.active ? (
-											<Check className="mt-2 size-14 shrink-0 text-primary" />
-										) : null}
 									</CommandItem>
 								</CommandGroup>
 							) : null}
 							{preferences.favorites.length > 0 ? (
-								<CommandGroup heading="Favorites">
-									{preferences.favorites.map((m) => renderModel(m, "fav"))}
+								<CommandGroup heading="Pinned">
+									{preferences.favorites.map((m) => renderModel(m, "pinned"))}
 								</CommandGroup>
 							) : null}
 							{preferences.recents.length > 0 ? (
@@ -546,84 +525,84 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 										onSelect={() => setShowAll(true)}
 										className="items-start gap-8 py-4 text-text-muted"
 									>
-										<ChevronRight className="mt-2 size-16 shrink-0" />
+										<ChevronRight className="mt-2 size-12 shrink-0" />
 										<span className="flex min-w-0 flex-1 flex-col">
 											<span>All models</span>
 											<span className="truncate tr-text-metadata">
-												{groups.map((g) => g.provider).join(" · ")} · {models.length}
+												{groups.map((g) => getProviderDisplayName(g.provider)).join(" · ")} ·{" "}
+												{models.length}
 											</span>
 										</span>
 									</CommandItem>
 								</CommandGroup>
+							) : isSearching ? (
+								// When searching, show all matching models without provider grouping
+								groups.map((group) => group.models.map((m) => renderModel(m, "all")))
 							) : (
-								groups.map((group) => (
-									<CommandGroup
-										key={group.provider}
-										heading={
-											<span className="flex items-center gap-8">
-												<span className="truncate">{group.provider}</span>
-												{group.auth ? (
-													<span className="ml-auto truncate text-text-subtle">{group.auth}</span>
-												) : null}
-											</span>
-										}
-									>
-										{group.models.map((m) => renderModel(m, "all"))}
-									</CommandGroup>
-								))
+								// Expanded view with collapsible provider groups
+								<>
+									{shortlist ? (
+										<CommandGroup>
+											<CommandItem
+												value="all:collapse"
+												data-testid="model-collapse-all"
+												onSelect={() => setShowAll(false)}
+												className="items-start gap-8 py-4 text-text-muted"
+											>
+												<ChevronDown className="mt-2 size-12 shrink-0" />
+												<span>All models</span>
+											</CommandItem>
+										</CommandGroup>
+									) : null}
+									{groups.map((group) => {
+										const isExpanded = expandedProviders.has(group.provider);
+										// Filter out models already shown in Pinned or Recent
+										const uniqueModels = group.models.filter(
+											(m) => !pinnedKeys.has(modelKey(m)) && !recentKeys.has(modelKey(m)),
+										);
+										// If all models are already shown elsewhere, still show the provider but with indication
+										const displayName = getProviderDisplayName(group.provider);
+										return (
+											<CommandGroup key={group.provider}>
+												<CommandItem
+													value={`provider:${group.provider}`}
+													data-testid="provider-group-header"
+													data-provider={group.provider}
+													onSelect={() => toggleProvider(group.provider)}
+													className="items-center gap-8 py-4"
+												>
+													{isExpanded ? (
+														<ChevronDown className="size-12 shrink-0 text-text-muted" />
+													) : (
+														<ChevronRight className="size-12 shrink-0 text-text-muted" />
+													)}
+													<span className="flex min-w-0 flex-1 items-center gap-8">
+														<span className="truncate">{displayName}</span>
+														<span className="text-text-subtle tr-text-metadata">
+															{group.models.length}
+														</span>
+													</span>
+													{group.auth ? (
+														<span className="truncate text-text-subtle tr-text-metadata">
+															{group.auth}
+														</span>
+													) : null}
+												</CommandItem>
+												{isExpanded ? uniqueModels.map((m) => renderModel(m, "all")) : null}
+											</CommandGroup>
+										);
+									})}
+								</>
 							)}
 						</CommandList>
 					</Command>
 					{current && effortLevels.length > 0 ? (
-						<EffortSlider
-							model={current}
+						<EffortSegmentedControl
 							level={level}
-							defaultLevel={preferences.defaultEffort}
+							levels={effortLevels}
 							onSelectLevel={onSelectLevel}
 						/>
 					) : null}
-					<div className="flex shrink-0 items-center gap-8 border-border-default border-t px-8 py-4">
-						{preferences.supported && current ? (
-							<button
-								type="button"
-								data-testid="model-set-default"
-								data-default={isDefaultPair}
-								disabled={isDefaultPair}
-								onClick={() => preferences.setDefault(current, level)}
-								className={FOOTER_LINK}
-							>
-								{isDefaultPair ? (
-									<Check className="size-12 shrink-0 text-primary" />
-								) : (
-									<Pin className="size-12 shrink-0" />
-								)}
-								{isDefaultPair ? "Default for new chats" : "Set as default"}
-							</button>
-						) : null}
-						{resetLevel ? (
-							<button
-								type="button"
-								data-testid="thinking-reset"
-								onClick={() => onSelectLevel(resetLevel)}
-								className={FOOTER_LINK}
-							>
-								<RefreshCw className="size-12 shrink-0" />
-								reset to {resetLevel}
-							</button>
-						) : null}
-						<span className="flex-1" />
-						<button
-							type="button"
-							data-testid="model-refresh"
-							data-refreshing={refreshing}
-							disabled={refreshing}
-							onClick={() => onRefresh(true)}
-							className={FOOTER_LINK}
-						>
-							<RefreshCw className={cn("size-12 shrink-0", refreshing && "animate-spin")} />
-							{refreshing ? "Updating…" : "Refresh"}
-						</button>
-					</div>
 				</PopoverContent>
 			</Popover>
 		);
