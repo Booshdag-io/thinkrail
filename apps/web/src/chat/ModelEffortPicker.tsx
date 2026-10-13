@@ -549,7 +549,7 @@ function ProviderRowWithFlyout({
 							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
 							<Command className="bg-transparent text-text-muted">
-								<CommandList className="max-h-[280px] p-12 space-y-2 [&_[cmdk-item]]:py-4">
+								<CommandList className="max-h-[280px] p-12 [&_[cmdk-item]]:py-4 [&_[cmdk-item]+[cmdk-item]]:mt-2">
 									{models.map((m) => renderModel(m))}
 								</CommandList>
 							</Command>
