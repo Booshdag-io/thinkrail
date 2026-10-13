@@ -202,7 +202,7 @@ function EffortSegmentedControl({
 	return (
 		<div
 			data-testid="thinking-section"
-			className="flex shrink-0 flex-col gap-16 border-border-default border-t px-12 py-16"
+			className="flex shrink-0 flex-col gap-12 border-border-default border-t px-12 pt-12 pb-12"
 		>
 			<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
 			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
@@ -351,12 +351,13 @@ function RowIconButton({
 
 /** Section label styled as uppercase secondary text, matching model-count color. */
 function SectionLabel({ children }: { children: React.ReactNode }) {
-	return <span className="block pt-12 pb-12 tr-text-eyebrow text-text-subtle">{children}</span>;
+	// 12px above and below: cmdk-group-heading has py-4, so we add pt-8 pb-8 = 4+8=12 each side
+	return <span className="block pt-8 pb-8 tr-text-eyebrow text-text-subtle">{children}</span>;
 }
 
-/** Inset divider aligned with content padding. */
+/** Inset divider aligned with content padding. 12px vertical margin total (6px each side). */
 function GroupDivider() {
-	return <div className="mx-8 my-4 h-px bg-border-muted" />;
+	return <div className="mx-8 my-[6px] h-px bg-border-muted" />;
 }
 
 /** Priority order for ALL MODELS providers. */
@@ -372,6 +373,7 @@ function ProviderRowWithFlyout({
 	onActivate,
 	onDeactivate,
 	container,
+	mainPopupRef,
 }: {
 	provider: string;
 	models: WireModel[];
@@ -381,13 +383,14 @@ function ProviderRowWithFlyout({
 	onActivate: () => void;
 	onDeactivate: () => void;
 	container?: HTMLElement | null | undefined;
+	mainPopupRef?: React.RefObject<HTMLDivElement | null>;
 }) {
 	const rowRef = useRef<HTMLButtonElement>(null);
 	const flyoutRef = useRef<HTMLDivElement>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
 
-	// Calculate flyout position when active
+	// Calculate flyout position when active - bottom-align with main popup
 	useEffect(() => {
 		if (!isActive || !rowRef.current) {
 			setPosition(null);
@@ -396,32 +399,38 @@ function ProviderRowWithFlyout({
 
 		const updatePosition = () => {
 			const row = rowRef.current;
+			const mainPopup = mainPopupRef?.current;
 			if (!row) return;
 
 			const rowRect = row.getBoundingClientRect();
+			const mainPopupRect = mainPopup?.getBoundingClientRect();
 			const flyoutWidth = 280;
 			const flyoutMaxHeight = 280;
 			const gap = 8;
 
-			// Default: position to the right of the row
-			let left = rowRect.right + gap;
-			let top = rowRect.top;
+			// Default: position to the right of the main popup (not the row)
+			let left = mainPopupRect ? mainPopupRect.right + gap : rowRect.right + gap;
+
+			// Bottom-align flyout with main popup
+			let top = mainPopupRect ? mainPopupRect.bottom - flyoutMaxHeight : rowRect.top;
 
 			// Check if flyout would overflow right edge of viewport
 			if (left + flyoutWidth > window.innerWidth - 8) {
 				// Position to the left of the main popup instead
-				left = rowRect.left - flyoutWidth - gap;
+				left = mainPopupRect
+					? mainPopupRect.left - flyoutWidth - gap
+					: rowRect.left - flyoutWidth - gap;
+			}
+
+			// Ensure flyout doesn't overflow top of viewport
+			if (top < 8) {
+				top = 8;
 			}
 
 			// Ensure flyout doesn't overflow bottom of viewport
 			const maxTop = window.innerHeight - flyoutMaxHeight - 8;
 			if (top > maxTop) {
 				top = Math.max(8, maxTop);
-			}
-
-			// Ensure flyout doesn't overflow top of viewport
-			if (top < 8) {
-				top = 8;
 			}
 
 			setPosition({ top, left });
@@ -437,7 +446,7 @@ function ProviderRowWithFlyout({
 			window.removeEventListener("scroll", updatePosition, true);
 			window.removeEventListener("resize", updatePosition);
 		};
-	}, [isActive]);
+	}, [isActive, mainPopupRef]);
 
 	const clearDelayedClose = useCallback(() => {
 		if (timeoutRef.current) {
@@ -554,6 +563,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const [open, setOpen] = useState(false);
 		const [query, setQuery] = useState("");
 		const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
+		const mainPopupRef = useRef<HTMLDivElement>(null);
 
 		const openWith = (next: string) => {
 			setQuery(next);
@@ -722,6 +732,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					<ChevronDown className="size-14 shrink-0 text-text-muted" />
 				</PopoverTrigger>
 				<PopoverContent
+					ref={mainPopupRef}
 					align="start"
 					container={container}
 					className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(360px,calc(100vw-16px))] flex-col p-0"
@@ -818,6 +829,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 													onActivate={() => setActiveFlyout(group.provider)}
 													onDeactivate={() => setActiveFlyout(null)}
 													container={container}
+													mainPopupRef={mainPopupRef}
 												/>
 											);
 										})}
