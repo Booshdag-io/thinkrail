@@ -388,7 +388,11 @@ function ProviderRowWithFlyout({
 	const rowRef = useRef<HTMLButtonElement>(null);
 	const flyoutRef = useRef<HTMLDivElement>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isActiveRef = useRef(isActive);
 	const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+	// Keep ref in sync with prop for use in timeout callbacks
+	isActiveRef.current = isActive;
 
 	// Calculate flyout position when active - bottom-align with main popup
 	useEffect(() => {
@@ -458,7 +462,11 @@ function ProviderRowWithFlyout({
 	const scheduleClose = useCallback(() => {
 		clearDelayedClose();
 		timeoutRef.current = setTimeout(() => {
-			onDeactivate();
+			// Only deactivate if this row is still the active one
+			// (prevents flickering when quickly switching between rows)
+			if (isActiveRef.current) {
+				onDeactivate();
+			}
 		}, 150);
 	}, [clearDelayedClose, onDeactivate]);
 
@@ -530,10 +538,12 @@ function ProviderRowWithFlyout({
 								left: position.left,
 								zIndex: 100,
 							}}
-							className="max-h-[280px] w-[280px] overflow-y-auto rounded-md border border-border-default bg-container-elevated-bg p-2 shadow-lg"
+							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
 							<Command className="bg-transparent">
-								<CommandList>{models.map((m) => renderModel(m))}</CommandList>
+								<CommandList className="max-h-[280px] p-2">
+									{models.map((m) => renderModel(m))}
+								</CommandList>
 							</Command>
 						</div>,
 						portalContainer,
@@ -738,13 +748,8 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					className="flex max-h-[var(--radix-popover-content-available-height)] w-[min(360px,calc(100vw-16px))] flex-col p-0"
 				>
 					<Command className="min-h-0 flex-1 bg-transparent">
-						<div className="flex items-center gap-4 border-border-default border-b pr-8">
-							<CommandInput
-								placeholder="Search model"
-								value={query}
-								onValueChange={setQuery}
-								className="min-w-0 flex-1 border-none"
-							/>
+						<div className="flex items-center border-border-default border-b [&>div]:min-w-0 [&>div]:flex-1 [&>div]:border-none">
+							<CommandInput placeholder="Search model" value={query} onValueChange={setQuery} />
 							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
 								<button
 									type="button"
@@ -752,7 +757,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 									data-refreshing={refreshing}
 									disabled={refreshing}
 									onClick={() => onRefresh(true)}
-									className="flex size-24 shrink-0 items-center justify-center rounded-sm text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent"
+									className="mr-8 flex size-24 shrink-0 items-center justify-center rounded-sm text-text-muted outline-none transition-colors hover:bg-control-bg-hovered hover:text-text-default focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:text-text-subtle disabled:hover:bg-transparent"
 								>
 									<RefreshCw className={cn("size-14", refreshing && "animate-spin")} />
 								</button>
