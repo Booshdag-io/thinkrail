@@ -766,7 +766,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								placeholder="Search model"
 								value={query}
 								onValueChange={setQuery}
-								className="text-text-muted"
+								className="text-text-muted placeholder:text-text-muted"
 							/>
 							<IconTooltip label={refreshing ? "Updating catalog…" : "Refresh catalog"}>
 								<button
