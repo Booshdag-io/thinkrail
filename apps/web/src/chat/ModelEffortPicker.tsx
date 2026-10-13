@@ -202,7 +202,7 @@ function EffortSegmentedControl({
 	return (
 		<div
 			data-testid="thinking-section"
-			className="flex shrink-0 flex-col gap-4 border-border-default border-t px-12 py-8"
+			className="flex shrink-0 flex-col gap-16 border-border-default border-t px-12 py-16"
 		>
 			<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
 			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
@@ -351,7 +351,7 @@ function RowIconButton({
 
 /** Section label styled as uppercase secondary text, matching model-count color. */
 function SectionLabel({ children }: { children: React.ReactNode }) {
-	return <span className="block pb-12 tr-text-eyebrow text-text-subtle">{children}</span>;
+	return <span className="block pt-12 pb-12 tr-text-eyebrow text-text-subtle">{children}</span>;
 }
 
 /** Inset divider aligned with content padding. */
@@ -639,7 +639,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					title={describeAuth(model) ?? undefined}
 					onSelect={() => pickModel(model)}
 					className={cn(
-						"group/row items-start gap-8 py-2",
+						"group/row items-start gap-8 py-[1px]",
 						isCurrent && "bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 					)}
 				>
@@ -760,7 +760,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 											close();
 										}}
 										className={cn(
-											"items-start gap-8 py-4",
+											"items-start gap-8 py-[1px]",
 											defaultOption.active &&
 												"bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 										)}
