@@ -511,7 +511,7 @@ function ProviderRowWithFlyout({
 				onFocus={handleFocus}
 				onKeyDown={handleKeyDown}
 				className={cn(
-					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 outline-none transition-colors",
+					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-4 outline-none transition-colors",
 					"hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
 					isActive && "bg-control-bg-selected",
 				)}
@@ -541,7 +541,7 @@ function ProviderRowWithFlyout({
 							className="w-[280px] rounded-md border border-border-default bg-container-elevated-bg shadow-lg"
 						>
 							<Command className="bg-transparent">
-								<CommandList className="max-h-[280px] p-12 space-y-2 [&_[cmdk-item]]:py-0">
+								<CommandList className="max-h-[280px] p-12 space-y-2 [&_[cmdk-item]]:py-4">
 									{models.map((m) => renderModel(m))}
 								</CommandList>
 							</Command>
@@ -675,6 +675,19 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					</span>
 					{preferences.supported ? (
 						<span className="mt-2 flex shrink-0 items-center gap-2">
+							{/* Pin/unpin action */}
+							<RowIconButton
+								testId="model-pin-toggle"
+								label={pinned ? "Unpin" : "Pin"}
+								active={pinned}
+								alwaysVisible={pinned}
+								onClick={(event) => {
+									event.stopPropagation();
+									preferences.toggleFavorite(model);
+								}}
+							>
+								{pinned ? <UnpinLine className="size-14" /> : <PinLine className="size-14" />}
+							</RowIconButton>
 							{/* Set as default action */}
 							<RowIconButton
 								testId="model-set-default"
@@ -693,19 +706,6 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								) : (
 									<RiRadioButtonLine className="size-14" />
 								)}
-							</RowIconButton>
-							{/* Pin/unpin action */}
-							<RowIconButton
-								testId="model-pin-toggle"
-								label={pinned ? "Unpin" : "Pin"}
-								active={pinned}
-								alwaysVisible={pinned}
-								onClick={(event) => {
-									event.stopPropagation();
-									preferences.toggleFavorite(model);
-								}}
-							>
-								{pinned ? <UnpinLine className="size-14" /> : <PinLine className="size-14" />}
 							</RowIconButton>
 						</span>
 					) : null}
@@ -768,7 +768,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 								</button>
 							</IconTooltip>
 						</div>
-						<CommandList className="max-h-[340px] min-h-0 flex-1 px-12 [&_[cmdk-group-items]]:space-y-2 [&_[cmdk-item]]:py-0">
+						<CommandList className="max-h-[340px] min-h-0 flex-1 px-12 [&_[cmdk-group-items]]:space-y-2 [&_[cmdk-item]]:py-4">
 							<CommandEmpty>No models found.</CommandEmpty>
 							{defaultOption ? (
 								<CommandGroup>
