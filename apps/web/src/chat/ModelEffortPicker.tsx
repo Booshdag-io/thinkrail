@@ -28,7 +28,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@thinkrail/ui/popover";
 import { IconTooltip } from "@thinkrail/ui/tooltip";
 import { cn } from "@thinkrail/ui/utils";
-import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
 	CENTRAL_KIND_TAG,
 	costLabel,
@@ -178,7 +178,7 @@ function EffortIndicator({ level }: { level: ThinkingLevel }) {
 /** The visible effort levels (off is hidden but preserved if the model supports it). */
 const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["minimal", "low", "medium", "high"];
 
-/** The effort segmented control with shared background container filling remaining space. */
+/** The effort segmented control with label on its own line and switcher below. */
 function EffortSegmentedControl({
 	level,
 	levels,
@@ -197,10 +197,10 @@ function EffortSegmentedControl({
 	return (
 		<div
 			data-testid="thinking-section"
-			className="flex shrink-0 items-center gap-8 border-border-default border-t px-12 py-8"
+			className="flex shrink-0 flex-col gap-4 border-border-default border-t px-12 py-8"
 		>
-			<span className="shrink-0 tr-text-eyebrow text-text-subtle">EFFORT</span>
-			<div className="flex flex-1 items-center rounded-sm bg-control-bg p-2">
+			<span className="tr-text-eyebrow text-text-subtle">EFFORT</span>
+			<div className="flex w-full items-center rounded-sm bg-control-bg p-2">
 				{showsOffIndicator ? (
 					<span className="flex-1 rounded-sm bg-control-bg-selected px-8 py-2 text-center text-text-default tr-text-metadata capitalize">
 						off
@@ -208,7 +208,6 @@ function EffortSegmentedControl({
 				) : null}
 				{visibleLevels.map((candidate) => {
 					const active = candidate === level;
-					const isHigh = candidate === "high" || candidate === "xhigh" || candidate === "max";
 					return (
 						<button
 							key={candidate}
@@ -218,15 +217,13 @@ function EffortSegmentedControl({
 							data-level={candidate}
 							onClick={() => onSelectLevel(candidate)}
 							className={cn(
-								"flex flex-1 items-center justify-center gap-4 rounded-sm px-6 py-2 tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+								"flex-1 rounded-sm px-4 py-2 text-center tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
 								active
 									? "bg-control-bg-selected text-text-default"
 									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
-								active && isHigh && "text-feedback-success",
 							)}
 						>
-							<EffortBars level={candidate} />
-							<span>{candidate === "minimal" ? "minimum" : candidate}</span>
+							{candidate === "minimal" ? "Minimum" : candidate}
 						</button>
 					);
 				})}
@@ -239,7 +236,7 @@ function RowMeta({ model, withProvider }: { model: WireModel; withProvider: bool
 	const kind = kindLabel(model);
 	const cost = costLabel(model);
 	return (
-		<span className="flex min-w-0 items-center gap-4 truncate text-text-muted tr-text-metadata">
+		<span className="mt-2 flex min-w-0 items-center gap-4 truncate text-text-muted tr-text-metadata">
 			{withProvider ? <span className="shrink-0">{model.provider}</span> : null}
 			{kind ? (
 				<>
@@ -349,12 +346,120 @@ function RowIconButton({
 
 /** Section label styled as uppercase secondary text, matching model-count color. */
 function SectionLabel({ children }: { children: React.ReactNode }) {
-	return <span className="tr-text-eyebrow text-text-subtle">{children}</span>;
+	return <span className="block pb-12 tr-text-eyebrow text-text-subtle">{children}</span>;
 }
 
 /** Inset divider aligned with content padding. */
 function GroupDivider() {
 	return <div className="mx-8 my-4 h-px bg-border-muted" />;
+}
+
+/** Priority order for ALL MODELS providers. */
+const PRIORITY_PROVIDERS = ["Anthropic", "OpenAI", "Google"] as const;
+
+/** Provider row with flyout for models on hover/focus/click. */
+function ProviderRowWithFlyout({
+	provider,
+	models,
+	auth,
+	renderModel,
+	isActive,
+	onActivate,
+	onDeactivate,
+}: {
+	provider: string;
+	models: WireModel[];
+	auth: string | null;
+	renderModel: (model: WireModel) => React.ReactNode;
+	isActive: boolean;
+	onActivate: () => void;
+	onDeactivate: () => void;
+}) {
+	const rowRef = useRef<HTMLDivElement>(null);
+	const flyoutRef = useRef<HTMLDivElement>(null);
+	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const clearDelayedClose = useCallback(() => {
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+	}, []);
+
+	const scheduleClose = useCallback(() => {
+		clearDelayedClose();
+		timeoutRef.current = setTimeout(() => {
+			onDeactivate();
+		}, 150);
+	}, [clearDelayedClose, onDeactivate]);
+
+	const handleMouseEnter = useCallback(() => {
+		clearDelayedClose();
+		onActivate();
+	}, [clearDelayedClose, onActivate]);
+
+	const handleMouseLeave = useCallback(() => {
+		scheduleClose();
+	}, [scheduleClose]);
+
+	const handleFocus = useCallback(() => {
+		clearDelayedClose();
+		onActivate();
+	}, [clearDelayedClose, onActivate]);
+
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				onActivate();
+			} else if (e.key === "Escape") {
+				onDeactivate();
+			}
+		},
+		[onActivate, onDeactivate],
+	);
+
+	return (
+		<div className="relative" ref={rowRef}>
+			<button
+				type="button"
+				data-testid="provider-row"
+				data-provider={provider}
+				data-active={isActive}
+				onMouseEnter={handleMouseEnter}
+				onMouseLeave={handleMouseLeave}
+				onFocus={handleFocus}
+				onKeyDown={handleKeyDown}
+				className={cn(
+					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-4 outline-none transition-colors",
+					"hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
+					isActive && "bg-control-bg-selected",
+				)}
+			>
+				<ProviderGlyph provider={provider} className="size-14 shrink-0 text-text-muted" />
+				<span className="flex min-w-0 flex-1 items-center gap-8">
+					<span className="truncate">{provider}</span>
+					<span className="text-text-subtle tr-text-metadata">{models.length}</span>
+				</span>
+				{auth ? <span className="truncate text-text-subtle tr-text-metadata">{auth}</span> : null}
+				<ChevronRight className="size-12 shrink-0 text-text-muted" />
+			</button>
+			{isActive ? (
+				<div
+					ref={flyoutRef}
+					role="listbox"
+					aria-label={`${provider} models`}
+					onMouseEnter={handleMouseEnter}
+					onMouseLeave={handleMouseLeave}
+					className="absolute top-0 left-full z-50 ml-2 max-h-[280px] w-[280px] overflow-y-auto rounded-md border border-border-default bg-container-elevated-bg p-2 shadow-lg"
+				>
+					<Command className="bg-transparent">
+						<CommandList>{models.map((m) => renderModel(m))}</CommandList>
+					</Command>
+				</div>
+			) : null}
+		</div>
+	);
 }
 
 export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffortPickerProps>(
@@ -376,8 +481,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 	) {
 		const [open, setOpen] = useState(false);
 		const [query, setQuery] = useState("");
-		const [showAll, setShowAll] = useState(false);
-		const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+		const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
 
 		const openWith = (next: string) => {
 			setQuery(next);
@@ -390,6 +494,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const close = () => {
 			setOpen(false);
 			setQuery("");
+			setActiveFlyout(null);
 			// Don't reset showAll or expandedProviders to preserve user's navigation state
 		};
 
@@ -421,19 +526,16 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 
 		const shortlist = preferences.favorites.length > 0 || preferences.recents.length > 0;
 		const isSearching = query.trim() !== "";
-		const folded = shortlist && !showAll && !isSearching;
 
-		const toggleProvider = (provider: string) => {
-			setExpandedProviders((prev) => {
-				const next = new Set(prev);
-				if (next.has(provider)) {
-					next.delete(provider);
-				} else {
-					next.add(provider);
-				}
-				return next;
+		// Sort providers to show priority providers first (Anthropic, OpenAI, Google)
+		const sortedGroups = useMemo(() => {
+			const priorityOrder = new Map<string, number>(PRIORITY_PROVIDERS.map((p, i) => [p, i]));
+			return [...rawGroups].sort((a, b) => {
+				const aOrder = priorityOrder.get(a.provider) ?? 999;
+				const bOrder = priorityOrder.get(b.provider) ?? 999;
+				return aOrder - bOrder;
 			});
-		};
+		}, [rawGroups]);
 
 		const pickModel = (model: WireModel) => {
 			const typedLevel = trailingLevel(query, model);
@@ -450,7 +552,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 			setQuery("");
 		};
 
-		const renderModel = (model: WireModel, section: string) => {
+		const renderModel = (model: WireModel, section = "flyout") => {
 			const pinned = preferences.isFavorite(model);
 			const isCurrent = !defaultOption?.active && sameModel(model, current);
 			const isDefault = preferences.isDefaultModel(model);
@@ -465,7 +567,7 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 					title={describeAuth(model) ?? undefined}
 					onSelect={() => pickModel(model)}
 					className={cn(
-						"group/row items-start gap-8 py-4",
+						"group/row items-start gap-8 py-2",
 						isCurrent && "bg-primary-subtle data-[selected=true]:bg-primary-subtle",
 					)}
 				>
@@ -624,79 +726,31 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 									</CommandGroup>
 								</>
 							) : null}
-							{folded ? (
-								<>
-									{defaultOption || shortlist ? <GroupDivider /> : null}
-									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
-										<CommandItem
-											value="all:models"
-											data-testid="model-show-all"
-											onSelect={() => setShowAll(true)}
-											className="items-start gap-8 py-4 text-text-muted"
-										>
-											<ChevronRight className="mt-2 size-12 shrink-0" />
-											<span className="flex min-w-0 flex-1 flex-col">
-												<span>Show all</span>
-												<span className="truncate tr-text-metadata">
-													{rawGroups.map((g) => g.provider).join(" · ")} · {models.length}
-												</span>
-											</span>
-										</CommandItem>
-									</CommandGroup>
-								</>
-							) : isSearching ? (
+							{isSearching ? (
 								// When searching, show all matching models without provider grouping
 								rawGroups.map((group) => group.models.map((m) => renderModel(m, "all")))
 							) : (
-								// Expanded view with collapsible provider groups
+								// Provider rows with flyouts - shows all providers with models on hover
 								<>
 									{defaultOption || shortlist ? <GroupDivider /> : null}
 									<CommandGroup heading={<SectionLabel>ALL MODELS</SectionLabel>}>
-										{shortlist ? (
-											<CommandItem
-												value="all:collapse"
-												data-testid="model-collapse-all"
-												onSelect={() => setShowAll(false)}
-												className="items-start gap-8 py-4 text-text-muted"
-											>
-												<ChevronDown className="mt-2 size-12 shrink-0" />
-												<span>Hide all</span>
-											</CommandItem>
-										) : null}
-										{rawGroups.map((group) => {
-											const isExpanded = expandedProviders.has(group.provider);
+										{sortedGroups.map((group) => {
 											// Filter out models already shown in Pinned or Recent
 											const uniqueModels = group.models.filter(
 												(m) => !pinnedKeys.has(modelKey(m)) && !recentKeys.has(modelKey(m)),
 											);
+											if (uniqueModels.length === 0) return null;
 											return (
-												<div key={group.provider}>
-													<CommandItem
-														value={`provider:${group.provider}`}
-														data-testid="provider-group-header"
-														data-provider={group.provider}
-														onSelect={() => toggleProvider(group.provider)}
-														className="items-center gap-8 py-4"
-													>
-														{isExpanded ? (
-															<ChevronDown className="size-12 shrink-0 text-text-muted" />
-														) : (
-															<ChevronRight className="size-12 shrink-0 text-text-muted" />
-														)}
-														<span className="flex min-w-0 flex-1 items-center gap-8">
-															<span className="truncate">{group.provider}</span>
-															<span className="text-text-subtle tr-text-metadata">
-																{group.models.length}
-															</span>
-														</span>
-														{group.auth ? (
-															<span className="truncate text-text-subtle tr-text-metadata">
-																{group.auth}
-															</span>
-														) : null}
-													</CommandItem>
-													{isExpanded ? uniqueModels.map((m) => renderModel(m, "all")) : null}
-												</div>
+												<ProviderRowWithFlyout
+													key={group.provider}
+													provider={group.provider}
+													models={uniqueModels}
+													auth={group.auth}
+													renderModel={(m) => renderModel(m, "all")}
+													isActive={activeFlyout === group.provider}
+													onActivate={() => setActiveFlyout(group.provider)}
+													onDeactivate={() => setActiveFlyout(null)}
+												/>
 											);
 										})}
 									</CommandGroup>
