@@ -146,7 +146,7 @@ function EffortBars({ level, className }: { level: ThinkingLevel; className?: st
 	const filledColor = isHigh ? "bg-feedback-success" : "bg-current";
 
 	return (
-		<span aria-hidden className={cn("inline-flex h-10 shrink-0 items-end gap-1", className)}>
+		<span aria-hidden className={cn("inline-flex h-10 shrink-0 items-end gap-2", className)}>
 			{[0, 1, 2, 3].map((i) => (
 				<span
 					key={i}
@@ -418,10 +418,10 @@ function ProviderRowWithFlyout({
 			const mainPopupRect = mainPopup?.getBoundingClientRect();
 			const flyoutWidth = 280;
 			const flyoutMaxHeight = 280;
-			const gap = -1; // Negative gap - borders overlap to appear merged
+			const flyoutOffset = -1; // Negative gap - borders overlap to appear merged
 
 			// Default: position to the right of the main popup (not the row)
-			let left = mainPopupRect ? mainPopupRect.right + gap : rowRect.right + gap;
+			let left = mainPopupRect ? mainPopupRect.right + flyoutOffset : rowRect.right + flyoutOffset;
 
 			// Bottom-align flyout with main popup
 			let top = mainPopupRect ? mainPopupRect.bottom - flyoutMaxHeight : rowRect.top;
@@ -430,8 +430,8 @@ function ProviderRowWithFlyout({
 			if (left + flyoutWidth > window.innerWidth - 8) {
 				// Position to the left of the main popup instead
 				left = mainPopupRect
-					? mainPopupRect.left - flyoutWidth - gap
-					: rowRect.left - flyoutWidth - gap;
+					? mainPopupRect.left - flyoutWidth - flyoutOffset
+					: rowRect.left - flyoutWidth - flyoutOffset;
 			}
 
 			// Ensure flyout doesn't overflow top of viewport
