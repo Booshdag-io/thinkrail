@@ -111,16 +111,21 @@ function KindGlyph({ model, className }: { model: WireModel; className?: string 
 	}
 }
 
-/** Effort level display names for accessibility. */
-const EFFORT_LABELS: Record<ThinkingLevel, string> = {
+/** Compact UI labels for effort levels. */
+const EFFORT_LABELS: Partial<Record<ThinkingLevel, string>> = {
 	off: "Off",
-	minimal: "Minimum",
+	minimal: "Min",
 	low: "Low",
-	medium: "Medium",
+	medium: "Med",
 	high: "High",
-	xhigh: "Extra High",
-	max: "Maximum",
+	xhigh: "XHigh",
+	max: "Max",
 };
+
+/** Get compact label for an effort level, with fallback for unknown levels. */
+export function effortLabel(level: ThinkingLevel): string {
+	return EFFORT_LABELS[level] ?? level.charAt(0).toUpperCase() + level.slice(1);
+}
 
 /** Map effort level to number of filled bars (1-4). */
 function effortBarCount(level: ThinkingLevel): number {
@@ -165,7 +170,7 @@ function EffortIndicator({ level }: { level: ThinkingLevel }) {
 	const isHigh = level === "high" || level === "xhigh" || level === "max";
 
 	return (
-		<IconTooltip label={`Effort: ${EFFORT_LABELS[level]}`}>
+		<IconTooltip label={`Effort: ${effortLabel(level)}`}>
 			<span
 				data-testid="effort-indicator"
 				data-level={level}
@@ -180,11 +185,8 @@ function EffortIndicator({ level }: { level: ThinkingLevel }) {
 	);
 }
 
-/** The visible effort levels including off when the model supports it. */
-const VISIBLE_LEVELS: readonly ThinkingLevel[] = ["off", "minimal", "low", "medium", "high"];
-
 /** Effort level descriptions shown next to the heading. */
-const EFFORT_DESCRIPTIONS: Record<ThinkingLevel, string> = {
+const EFFORT_DESCRIPTIONS: Partial<Record<ThinkingLevel, string>> = {
 	off: "No reasoning · Fastest · Cheapest",
 	minimal: "Briefest reasoning",
 	low: "Light reasoning",
@@ -193,6 +195,11 @@ const EFFORT_DESCRIPTIONS: Record<ThinkingLevel, string> = {
 	xhigh: "Extended reasoning",
 	max: "Maximum reasoning",
 };
+
+/** Get description for an effort level, with fallback for unknown levels. */
+export function effortDescription(level: ThinkingLevel): string {
+	return EFFORT_DESCRIPTIONS[level] ?? `${effortLabel(level)} reasoning`;
+}
 
 /** The effort segmented control with label on its own line and switcher below. */
 function EffortSegmentedControl({
@@ -204,10 +211,7 @@ function EffortSegmentedControl({
 	levels: readonly ThinkingLevel[];
 	onSelectLevel: (level: ThinkingLevel) => void;
 }) {
-	// Filter to visible levels that the model supports
-	const visibleLevels = useMemo(() => VISIBLE_LEVELS.filter((l) => levels.includes(l)), [levels]);
-
-	const description = EFFORT_DESCRIPTIONS[level] ?? "";
+	const description = effortDescription(level);
 
 	return (
 		<div
@@ -219,7 +223,7 @@ function EffortSegmentedControl({
 				<span className="tr-text-metadata text-text-subtle">{description}</span>
 			</div>
 			<div className="flex w-full items-center rounded-sm border border-border-muted p-2">
-				{visibleLevels.map((candidate) => {
+				{levels.map((candidate) => {
 					const active = candidate === level;
 					return (
 						<button
@@ -230,13 +234,13 @@ function EffortSegmentedControl({
 							data-level={candidate}
 							onClick={() => onSelectLevel(candidate)}
 							className={cn(
-								"flex-1 rounded-sm px-4 py-2 text-center tr-text-metadata capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+								"flex-1 rounded-sm px-4 py-2 text-center tr-text-metadata outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary",
 								active
 									? "bg-control-bg-selected text-text-default"
 									: "text-text-muted hover:bg-control-bg-hovered hover:text-text-default",
 							)}
 						>
-							{candidate === "minimal" ? "Minimum" : candidate === "off" ? "Off" : candidate}
+							{effortLabel(candidate)}
 						</button>
 					);
 				})}
