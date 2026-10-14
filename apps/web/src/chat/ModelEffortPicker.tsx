@@ -664,7 +664,10 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 		const renderModel = (model: WireModel, section = "flyout") => {
 			const pinned = preferences.isFavorite(model);
 			const isCurrent = !defaultOption?.active && sameModel(model, current);
-			const isDefault = preferences.isDefaultModel(model);
+			// Model-only match (for visual indicator)
+			const isDefaultModel = preferences.isDefaultModel(model);
+			// Full match: model + current effort level (for disabled state)
+			const isDefaultPair = preferences.isDefault(model, level);
 			return (
 				<CommandItem
 					key={`${section}:${modelKey(model)}`}
@@ -703,17 +706,23 @@ export const ModelEffortPicker = forwardRef<ModelEffortPickerHandle, ModelEffort
 							{/* Set as default action */}
 							<RowIconButton
 								testId="model-set-default"
-								label={isDefault ? "Default model" : "Set as default"}
-								active={isDefault}
-								disabled={isDefault}
+								label={
+									isDefaultPair
+										? "Default model and effort"
+										: isDefaultModel
+											? "Set current effort as default"
+											: "Set as default"
+								}
+								active={isDefaultModel}
+								disabled={isDefaultPair}
 								onClick={(event) => {
 									event.stopPropagation();
-									if (!isDefault) {
+									if (!isDefaultPair) {
 										preferences.setDefault(model, level);
 									}
 								}}
 							>
-								{isDefault ? (
+								{isDefaultModel ? (
 									<RiRadioButtonFill className="size-14 text-primary" />
 								) : (
 									<RiRadioButtonLine className="size-14" />
