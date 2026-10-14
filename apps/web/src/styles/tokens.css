@@ -45,7 +45,7 @@
  */
 @container (min-width: 600px) {
 	:where(*) {
-		--chat-gutter: 48px;
+		--chat-gutter: var(--space-48);
 	}
 }
 
