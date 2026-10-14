@@ -401,10 +401,26 @@ function ProviderRowWithFlyout({
 	const flyoutRef = useRef<HTMLDivElement>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isActiveRef = useRef(isActive);
+	const openedViaKeyboardRef = useRef(false);
 	const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
 
 	// Keep ref in sync with prop for use in timeout callbacks
 	isActiveRef.current = isActive;
+
+	// Focus first model option when flyout opens via keyboard
+	useEffect(() => {
+		if (isActive && openedViaKeyboardRef.current && flyoutRef.current) {
+			// Small delay to ensure the Command component has rendered
+			const timer = setTimeout(() => {
+				const firstOption = flyoutRef.current?.querySelector('[data-testid="model-option"]');
+				if (firstOption instanceof HTMLElement) {
+					firstOption.focus();
+				}
+				openedViaKeyboardRef.current = false;
+			}, 0);
+			return () => clearTimeout(timer);
+		}
+	}, [isActive]);
 
 	// Calculate flyout position when active - bottom-align with main popup
 	useEffect(() => {
@@ -496,16 +512,54 @@ function ProviderRowWithFlyout({
 		onActivate();
 	}, [clearDelayedClose, onActivate]);
 
-	const handleKeyDown = useCallback(
+	const handleRowKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
 			if (e.key === "Enter" || e.key === " ") {
 				e.preventDefault();
+				openedViaKeyboardRef.current = true;
 				onActivate();
 			} else if (e.key === "Escape") {
 				onDeactivate();
 			}
 		},
 		[onActivate, onDeactivate],
+	);
+
+	const handleFlyoutKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				e.stopPropagation();
+				onDeactivate();
+				// Return focus to provider row
+				rowRef.current?.focus();
+			}
+		},
+		[onDeactivate],
+	);
+
+	const handleFlyoutFocusIn = useCallback(() => {
+		// Keep flyout open while focus is inside
+		clearDelayedClose();
+	}, [clearDelayedClose]);
+
+	const handleFlyoutBlur = useCallback(
+		(e: React.FocusEvent) => {
+			// Check if focus is moving outside the flyout
+			const relatedTarget = e.relatedTarget as Node | null;
+			const flyout = flyoutRef.current;
+			const row = rowRef.current;
+			if (
+				relatedTarget &&
+				(flyout?.contains(relatedTarget) || row?.contains(relatedTarget) || row === relatedTarget)
+			) {
+				// Focus is staying within flyout or moving to row - keep open
+				return;
+			}
+			// Focus is leaving - schedule close
+			scheduleClose();
+		},
+		[scheduleClose],
 	);
 
 	const portalContainer = container ?? document.body;
@@ -518,10 +572,12 @@ function ProviderRowWithFlyout({
 				data-testid="provider-row"
 				data-provider={provider}
 				data-active={isActive}
+				aria-expanded={isActive}
+				aria-haspopup="listbox"
 				onMouseEnter={handleMouseEnter}
 				onMouseLeave={handleMouseLeave}
 				onFocus={handleFocus}
-				onKeyDown={handleKeyDown}
+				onKeyDown={handleRowKeyDown}
 				className={cn(
 					"flex w-full cursor-pointer items-center gap-8 rounded-sm px-8 py-4 outline-none transition-colors",
 					"hover:bg-control-bg-hovered focus-visible:ring-2 focus-visible:ring-primary",
@@ -544,6 +600,9 @@ function ProviderRowWithFlyout({
 							aria-label={`${provider} models`}
 							onMouseEnter={handleMouseEnter}
 							onMouseLeave={handleMouseLeave}
+							onKeyDown={handleFlyoutKeyDown}
+							onFocus={handleFlyoutFocusIn}
+							onBlur={handleFlyoutBlur}
 							style={{
 								position: "fixed",
 								top: position.top,
