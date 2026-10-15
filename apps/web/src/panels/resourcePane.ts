@@ -1,3 +1,10 @@
+import type { GitDiffScope } from "@thinkrail/contracts";
+import {
+	describeResource,
+	PENDING_TEXT_META,
+	resolveRenderers,
+	selectResourceRenderer,
+} from "@thinkrail/resource-renderers";
 import { useEffect, useRef } from "react";
 import { useAppStore } from "../store";
 import { getTransport } from "../transport";
@@ -15,6 +22,21 @@ export function resourceBytesUrl(workspaceId: string, path: string, oid?: string
 	return oid
 		? `${base}${BLOB_ROUTE}/${workspace}/${encodeURIComponent(oid)}/${encodeResourcePath(path)}`
 		: `${base}${FILES_ROUTE}/${workspace}/${encodeResourcePath(path)}`;
+}
+
+// Whether the diff renderer that a file resolves to from its path alone (before its content loads)
+// honours the split/unified layout control. Lets a pane-level toggle hide itself when no file in a
+// scope can use it, matching the single-file DiffPane's `renderer.capabilities.layout` gate.
+export function diffRendererSupportsLayout(
+	workspaceId: string,
+	path: string,
+	scope: GitDiffScope,
+	selectedId: string | undefined,
+	mobile: boolean,
+): boolean {
+	const resource = describeResource(workspaceId, path, PENDING_TEXT_META, scope);
+	const candidates = resolveRenderers(resource, "diff", { mobile });
+	return selectResourceRenderer(candidates, selectedId, path).capabilities.layout;
 }
 
 export function useResetViewStateOnImplementationChange(
