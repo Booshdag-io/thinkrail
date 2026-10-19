@@ -1,6 +1,5 @@
 import type { GitFileChange, GitStatus } from "@thinkrail/contracts";
 import {
-	type MutableRefObject,
 	type RefObject,
 	useCallback,
 	useEffect,
@@ -15,8 +14,6 @@ const SECTION_HEADER_HEIGHT = 32;
 const END_NOTE_HEIGHT = 48;
 const USER_SCROLL_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
 
-// The section a programmatic scroll is settling onto; `commentId` is best-effort centering for a card
-// already in the DOM (small sections) — bounded sections reveal via Pierre focus instead.
 type SettleTarget = { path: string; commentId?: string };
 
 interface ReviewRevealInput {
@@ -27,8 +24,6 @@ interface ReviewRevealInput {
 	layout: ChangesLayout;
 	reveal: ChangesTabReveal | null;
 	activePath: string | null;
-	// Shared with the data-read hook's onSwitch, so it lives in the component and is passed in.
-	restoredStacked: MutableRefObject<boolean>;
 }
 
 interface ReviewReveal {
@@ -39,11 +34,7 @@ interface ReviewReveal {
 	onTotalListHeightChanged: () => void;
 }
 
-// Owns the continuous-review scroll choreography: which section is "active" as the list scrolls, the
-// settle-to-a-revealed-section dance while Virtuoso measures variable section heights, and the tail
-// spacer height. The within-section reveal of a comment is NOT done here — `consumeChangesTabReveal`
-// raises a `reviewFocusRequest` that the target section's `usePierreFocus` consumes (`revealLine`), the
-// only path that can surface a line not yet rendered in a bounded, virtualized section.
+// Owns the continuous-review scroll choreography (active-section spy, settle-to-section, tail spacer).
 export function useReviewReveal({
 	workspaceId,
 	tabId,
@@ -52,7 +43,6 @@ export function useReviewReveal({
 	layout,
 	reveal,
 	activePath,
-	restoredStacked,
 }: ReviewRevealInput): ReviewReveal {
 	const setActivePath = useAppStore((state) => state.setChangesTabActivePath);
 	const consumeReveal = useAppStore((state) => state.consumeChangesTabReveal);
@@ -61,6 +51,9 @@ export function useReviewReveal({
 	const scrollerRef = useRef<HTMLElement | null>(null);
 	const [tailHeight, setTailHeight] = useState(0);
 	const tailObserver = useRef<ResizeObserver | null>(null);
+	// Gates the one-time scroll to the active section when the stacked list first has content; reset when
+	// the scope empties (a workspace/scope switch) so the next load re-runs it.
+	const restoredStacked = useRef(false);
 	const settling = useRef<SettleTarget | null>(null);
 	const releaseSettling = useCallback(() => {
 		const commentId = settling.current?.commentId;
@@ -145,7 +138,7 @@ export function useReviewReveal({
 				setActivePath(workspaceId, tabId, active);
 			}
 		});
-	}, [restoredStacked, revealComment, setActivePath, tabId, workspaceId]);
+	}, [revealComment, setActivePath, tabId, workspaceId]);
 	useEffect(() => () => cancelAnimationFrame(spyFrame.current), []);
 
 	useEffect(() => {
@@ -170,7 +163,6 @@ export function useReviewReveal({
 		files,
 		layout,
 		releaseSettling,
-		restoredStacked,
 		scrollToSection,
 		status,
 		tabId,
@@ -185,14 +177,18 @@ export function useReviewReveal({
 			settling.current = null;
 			return;
 		}
-		if (pendingReveal || !status || restoredStacked.current) return;
+		if (!status) {
+			restoredStacked.current = false;
+			return;
+		}
+		if (pendingReveal || restoredStacked.current) return;
 		restoredStacked.current = true;
 		const index = files.findIndex((change) => change.path === activePathRef.current);
 		const change = files[index];
 		if (!change) return;
 		const frame = requestAnimationFrame(() => scrollToSection(index, { path: change.path }));
 		return () => cancelAnimationFrame(frame);
-	}, [files, layout, pendingReveal, restoredStacked, scrollToSection, status]);
+	}, [files, layout, pendingReveal, scrollToSection, status]);
 
 	const onTotalListHeightChanged = useCallback(() => {
 		if (revealComment()) return;

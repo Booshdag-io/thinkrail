@@ -98,6 +98,24 @@ test("the Split/Inline toggle is hidden when no file in the scope supports a lay
 	await expect(page.getByTestId("changes-review-toggle-inline")).toHaveCount(0);
 });
 
+test("the Split/Inline toggle is hidden for an image-only scope", async ({ page }) => {
+	await openFixtureProject(page);
+	await createWorkspaceViaDialog(page);
+	const worktree = join(E2E_DATA_DIR, "worktrees", "sample-project", "workspace-1");
+	// a PNG resolves to the image renderer (layout: false) even before its bytes load
+	const png = Buffer.from(
+		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+		"base64",
+	);
+	writeFileSync(join(worktree, "pixel.png"), png);
+	await revealWorkbenchTool(page, "changes");
+	await row(page, "pixel.png").click();
+	await expect(reviewTab(page)).toHaveCount(1);
+	await expect(section(page, "pixel.png").getByTestId("image-diff")).toBeVisible();
+	await expect(page.getByTestId("changes-review-toggle-split")).toHaveCount(0);
+	await expect(page.getByTestId("changes-review-toggle-inline")).toHaveCount(0);
+});
+
 test("the Split/Inline toggle appears and switches layout when a code file is in the scope", async ({
 	page,
 }) => {

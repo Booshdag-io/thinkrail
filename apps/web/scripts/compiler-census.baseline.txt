@@ -34,7 +34,6 @@ src/panels/branches.ts useBranchList
 src/panels/useAnalyticsConsent.ts useAnalyticsConsent
 src/panels/useBranchStatus.ts useBranchStatus
 src/panels/useLiveTabContent.ts useLiveTabContent
-src/panels/useReviewReveal.ts useReviewReveal
 src/panels/useWorkspaceRead.ts useWorkspaceRead
 src/prompt/pendingSelection.ts usePendingSelection
 src/prompt/templatePick.ts useTemplateCommandPicker
