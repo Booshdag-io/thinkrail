@@ -24,6 +24,7 @@ export {
 	diffResourceMeta,
 	type HunkActions,
 	type HunkTriage,
+	inferredMime,
 	isPlaceable,
 	outdatedReason,
 	PENDING_TEXT_META,
