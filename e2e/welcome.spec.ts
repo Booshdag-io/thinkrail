@@ -41,7 +41,11 @@ test("the Welcome provider warning only shows when no provider is connected, and
 		await page.getByTestId("welcome-connect-provider").click();
 		const dialog = page.getByTestId("connect-provider-dialog");
 		await expect(dialog).toBeVisible();
-		await expect(dialog.getByTestId("connect-option-jetbrains")).toContainText("Recommended");
+		await expect(dialog.getByTestId("connect-option-recommended")).toContainText("Recommended");
+		await expect(dialog.getByTestId("connect-option-recommended")).toContainText("Anthropic");
+		await expect(
+			dialog.getByTestId("connect-provider-list").getByTestId("jetbrains-ai-card"),
+		).toBeVisible();
 		await expect(dialog.getByTestId("jbcentral-quota-settings")).toHaveCount(0);
 
 		await dialog.getByTestId("connect-show-all").click();

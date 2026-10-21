@@ -115,6 +115,23 @@ export function selectSupportsOnboarding(state: ProtocolState): boolean {
 	return state.protocolVersion !== null && state.protocolVersion >= ONBOARDING_PROTOCOL_VERSION;
 }
 
+export function selectFirstRunPromptsHeld(
+	state: ProtocolState & {
+		onboardingWizard: "pending" | "shown" | "hidden";
+		onboardingDismissed: boolean;
+		projects: readonly unknown[];
+		recentProjects: readonly unknown[];
+	},
+): boolean {
+	if (state.onboardingDismissed || state.onboardingWizard === "hidden") return false;
+	if (state.onboardingWizard === "shown") return true;
+	return (
+		selectSupportsOnboarding(state) &&
+		state.projects.length === 0 &&
+		state.recentProjects.length === 0
+	);
+}
+
 export function selectSupportsMcp(state: ProtocolState): boolean {
 	return state.protocolVersion !== null && state.protocolVersion >= MCP_PROTOCOL_VERSION;
 }

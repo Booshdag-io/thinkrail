@@ -54,11 +54,13 @@ export function OnboardingWizard({
 			data-step={step}
 			className="flex w-full max-w-[640px] flex-col items-center gap-24"
 		>
-			<StepHeader current={step} />
-
 			{step === "connect" ? (
 				<>
-					<StepTitle title="Welcome to ThinkRail" subtitle="First, pick how the agent will run." />
+					<StepTitle
+						step="connect"
+						title="Welcome to ThinkRail"
+						subtitle="First, pick how the agent will run."
+					/>
 					<div className="w-full">
 						<ConnectProviderOptions
 							auth={auth}
@@ -80,6 +82,7 @@ export function OnboardingWizard({
 			) : step === "project" ? (
 				<>
 					<StepTitle
+						step="project"
 						title="Pick a project"
 						subtitle="Start from nothing or open a folder you have."
 					/>
@@ -110,6 +113,7 @@ export function OnboardingWizard({
 			) : step === "build" && project ? (
 				<>
 					<StepTitle
+						step="build"
 						title={`${project.name} is ready`}
 						subtitle="Draft its specs with the agent first, or go straight to building."
 					/>
@@ -193,13 +197,16 @@ function StepHeader({ current }: { current: Step }) {
 	);
 }
 
-function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+function StepTitle({ step, title, subtitle }: { step: Step; title: string; subtitle: string }) {
 	return (
-		<div className="flex flex-col items-center gap-8 text-center">
-			<h1 data-testid="welcome-title" className="tr-heading-xl break-words text-primary">
-				{title}
-			</h1>
-			<p className="tr-text-reading text-text-muted">{subtitle}</p>
+		<div className="flex flex-col items-center gap-16 text-center">
+			<div className="flex flex-col items-center gap-8">
+				<h1 data-testid="welcome-title" className="tr-heading-xl break-words text-primary">
+					{title}
+				</h1>
+				<p className="tr-text-reading text-text-muted">{subtitle}</p>
+			</div>
+			<StepHeader current={step} />
 		</div>
 	);
 }
@@ -239,7 +246,11 @@ function VerifyStep({
 
 	return (
 		<>
-			<StepTitle title={`${name} connected`} subtitle="Here's what the agent can run on." />
+			<StepTitle
+				step="verify"
+				title={`${name} connected`}
+				subtitle="Here's what the agent can run on."
+			/>
 			<div
 				data-testid="onboarding-verify"
 				className="flex w-full max-w-[420px] flex-col gap-8 rounded-sm border border-border-default bg-container-workspace-bg p-16 text-left"

@@ -86,6 +86,11 @@ ourselves and never surface a credential value over the wire.
     - `cancelLogin(loginId)` — aborts the signal **and** settles the parked input with `undefined` (which
       makes the awaiting `prompt` throw), because the signal alone won't stop a provider's
       browser/callback-server wait; `cancelAllLogins()` sweeps them on host `stop()`.
+    - **A new `startLogin` supersedes** any unfinished login for the same provider, cancelling it
+      silently: pi runs one credential operation per provider at a time, so a login abandoned at a
+      prompt (tab closed or reloaded, never cancelled) would otherwise park every later attempt behind
+      it on "Working…" until the host restarts. No frame is pushed for the superseded login — an idle
+      client would otherwise pop a stray error dialog for a login it never saw.
     - `logoutProvider(id)` — `runtime.logout` (refreshes internally). (The old `setProviderApiKey` — a
       canned interaction answering exactly one secret prompt — is gone with `provider.setApiKey`: the
       dialog flow subsumes it and also serves multi-prompt providers.)

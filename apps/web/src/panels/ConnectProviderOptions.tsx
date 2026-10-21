@@ -1,13 +1,13 @@
 import {
 	RiArrowRightLine as ArrowRight,
-	RiChat3Line as Chat,
 	RiKeyLine as KeyRound,
-	type RemixiconComponentType,
+	RiLoginBoxLine as LogIn,
+	RiSearchLine as Search,
 } from "@remixicon/react";
 import type { ProviderStatus } from "@thinkrail/contracts";
 import { Button } from "@thinkrail/ui/button";
 import { cn } from "@thinkrail/ui/utils";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SkeletonRows } from "@/components/Skeleton";
 import { toast } from "@/store";
 import { getTransport } from "@/transport";
@@ -15,8 +15,22 @@ import { JetBrainsAiCard } from "./JetBrainsAiCard";
 import { ProviderRow } from "./ProviderRow";
 import type { ProviderAuth } from "./useProviderAuth";
 
-const API_KEY_VISIBLE = 6;
-const SUMMARY_NAMES = 4;
+const RECOMMENDED_PROVIDER = "anthropic";
+const JETBRAINS_AI_SEARCH = "jetbrains ai central";
+
+type Method = "oauth" | "api_key";
+
+const RECOMMENDED_COPY: Record<Method, { title: string; detail: string }> = {
+	oauth: { title: "Claude Pro or Max", detail: "Sign in with your Claude subscription." },
+	api_key: { title: "API key", detail: "Paste a key from the Anthropic Console." },
+};
+
+function methodsOf(provider: ProviderStatus): Method[] {
+	return [
+		...(provider.canOAuth ? (["oauth"] as const) : []),
+		...(provider.canApiKey ? (["api_key"] as const) : []),
+	];
+}
 
 export function connectedProviderName(provider: ProviderStatus): string {
 	return provider.kind === "central" ? "JetBrains AI" : provider.name;
@@ -42,8 +56,7 @@ export function ConnectProviderOptions({
 	onConnected: (provider: ProviderStatus) => void;
 }) {
 	const { report, failed, load, startLogin, rowBusy } = auth;
-	const [expanded, setExpanded] = useState<"subscription" | "api-key" | null>(null);
-	const [showAllKeys, setShowAllKeys] = useState(false);
+	const [search, setSearch] = useState("");
 	const baseline = useRef<Set<string> | null>(null);
 
 	useEffect(() => {
@@ -74,78 +87,80 @@ export function ConnectProviderOptions({
 	}
 	if (!report) return <SkeletonRows rows={3} />;
 
-	const unconfigured = report.providers.filter((p) => !p.configured);
-	const subscriptions = unconfigured.filter((p) => p.canOAuth);
-	const apiKeys = unconfigured.filter((p) => p.canApiKey);
-	const shownKeys = showAllKeys ? apiKeys : apiKeys.slice(0, API_KEY_VISIBLE);
-	const toggle = (option: "subscription" | "api-key") =>
-		setExpanded((current) => (current === option ? null : option));
-	const rows = (providers: ProviderStatus[]) =>
-		providers.map((p) => (
-			<ProviderRow
-				key={p.id}
-				provider={p}
-				busy={rowBusy(p.id)}
-				onSignIn={() => void startLogin(p.id, "oauth")}
-				onApiKey={() => void startLogin(p.id, "api_key")}
-			/>
-		));
+	const unconfigured = report.providers.filter(
+		(p) => !p.configured && p.kind !== "central" && (p.canOAuth || p.canApiKey),
+	);
+	const recommended = unconfigured.find((p) => p.id === RECOMMENDED_PROVIDER);
+	const query = search.trim().toLowerCase();
+	const others = unconfigured
+		.filter((p) =>
+			query ? p.name.toLowerCase().includes(query) || p.id.includes(query) : p !== recommended,
+		)
+		.sort((a, b) => (b.canOAuth ? 1 : 0) - (a.canOAuth ? 1 : 0));
+	const showJetBrains = !query || JETBRAINS_AI_SEARCH.includes(query);
+	const connect = (p: ProviderStatus, method: Method) => void startLogin(p.id, method);
 
 	return (
 		<div data-testid="connect-provider-options" className="flex flex-col gap-12 text-left">
-			<section
-				data-testid="connect-option-jetbrains"
-				className="flex flex-col gap-8 rounded-sm border border-primary-muted bg-clip-padding bg-primary-subtle p-16"
-			>
-				<span className="self-start rounded-full border border-primary-muted bg-clip-padding bg-primary-subtle px-8 py-2 tr-text-label-pill text-primary">
-					Recommended
-				</span>
-				<JetBrainsAiCard
-					status={report.jbcentral}
-					install={report.jbcentralInstall}
-					onChanged={load}
-				/>
-			</section>
-
-			{subscriptions.length > 0 ? (
-				<ConnectOption
-					testId="connect-option-subscription"
-					icon={Chat}
-					title="Use my subscription"
-					subtitle={`${summarize(subscriptions)} — no API key needed.`}
-					actionLabel="Choose…"
-					expanded={expanded === "subscription"}
-					onToggle={() => toggle("subscription")}
+			{recommended ? (
+				<section
+					data-testid="connect-option-recommended"
+					className="flex flex-col gap-8 rounded-sm border border-primary-muted bg-clip-padding bg-primary-subtle p-16"
 				>
-					{rows(subscriptions)}
-				</ConnectOption>
+					<span className="self-start rounded-full border border-primary-muted bg-clip-padding bg-primary-subtle px-8 py-2 tr-text-label-pill text-primary">
+						Recommended
+					</span>
+					<span className="tr-title-card text-text-default">{recommended.name}</span>
+					<MethodChoices
+						provider={recommended}
+						busy={rowBusy(recommended.id)}
+						onPick={(method) => connect(recommended, method)}
+					/>
+				</section>
 			) : null}
 
-			{apiKeys.length > 0 ? (
-				<ConnectOption
-					testId="connect-option-api-key"
-					icon={KeyRound}
-					title="Bring your own API key"
-					subtitle={summarize(apiKeys)}
-					actionLabel="Enter key"
-					expanded={expanded === "api-key"}
-					onToggle={() => toggle("api-key")}
-				>
-					{rows(shownKeys)}
-					{shownKeys.length < apiKeys.length ? (
-						<div className="pt-8">
-							<Button
-								variant="outline"
-								size="sm"
-								data-testid="connect-show-more-keys"
-								onClick={() => setShowAllKeys(true)}
-							>
-								Show {apiKeys.length - shownKeys.length} more
-							</Button>
+			<section
+				data-testid="connect-provider-all"
+				className="flex flex-col gap-8 rounded-sm border border-border-default bg-clip-padding bg-container-workspace-bg p-16"
+			>
+				<div className="relative">
+					<Search className="pointer-events-none absolute top-1/2 left-8 size-14 -translate-y-1/2 text-text-muted" />
+					<input
+						type="text"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder={recommended ? "Search other providers…" : "Search providers…"}
+						aria-label="Search providers"
+						data-testid="connect-provider-search"
+						className="h-32 w-full rounded-sm border border-control-border-default bg-control-bg pl-24 pr-8 tr-text-ui text-text-default placeholder:text-text-muted outline-none transition-colors focus:border-control-border-active"
+					/>
+				</div>
+				<div data-testid="connect-provider-list" className="flex h-240 flex-col overflow-y-auto">
+					{showJetBrains ? (
+						<div className="border-border-muted border-b py-12">
+							<JetBrainsAiCard
+								status={report.jbcentral}
+								install={report.jbcentralInstall}
+								onChanged={load}
+							/>
 						</div>
 					) : null}
-				</ConnectOption>
-			) : null}
+					{others.map((p) => (
+						<ProviderRow
+							key={p.id}
+							provider={p}
+							busy={rowBusy(p.id)}
+							onSignIn={() => connect(p, "oauth")}
+							onApiKey={() => connect(p, "api_key")}
+						/>
+					))}
+					{!showJetBrains && others.length === 0 ? (
+						<p className="py-16 text-center text-text-muted tr-text-metadata">
+							No providers match your search.
+						</p>
+					) : null}
+				</div>
+			</section>
 
 			<Button
 				variant="ghost"
@@ -161,56 +176,47 @@ export function ConnectProviderOptions({
 	);
 }
 
-function summarize(providers: ProviderStatus[]): string {
-	const names = providers.slice(0, SUMMARY_NAMES).map((p) => p.name);
-	return providers.length > SUMMARY_NAMES ? `${names.join(", ")}…` : names.join(", ");
-}
-
-function ConnectOption({
-	testId,
-	icon: Icon,
-	title,
-	subtitle,
-	actionLabel,
-	expanded,
-	onToggle,
-	children,
+function MethodChoices({
+	provider,
+	busy,
+	onPick,
 }: {
-	testId: string;
-	icon: RemixiconComponentType;
-	title: string;
-	subtitle: string;
-	actionLabel: string;
-	expanded: boolean;
-	onToggle: () => void;
-	children: ReactNode;
+	provider: ProviderStatus;
+	busy: boolean;
+	onPick: (method: Method) => void;
 }) {
 	return (
-		<section
-			data-testid={testId}
-			data-expanded={expanded}
-			className={cn(
-				"flex flex-col rounded-sm border bg-clip-padding bg-container-workspace-bg p-16",
-				expanded ? "border-primary-muted" : "border-border-default",
-			)}
-		>
-			<div className="flex items-center gap-12">
-				<Icon className="size-20 shrink-0 text-text-muted" />
-				<span className="min-w-0 flex-1">
-					<span className="block tr-title-card text-text-default">{title}</span>
-					<span className="mt-2 block truncate text-text-muted tr-text-metadata">{subtitle}</span>
-				</span>
-				<Button
-					variant="outline"
-					size="sm"
-					aria-expanded={expanded}
-					data-testid={`${testId}-toggle`}
-					onClick={onToggle}
-				>
-					{actionLabel}
-				</Button>
-			</div>
-			{expanded ? <div className="mt-8 flex flex-col">{children}</div> : null}
-		</section>
+		<div className="grid gap-8 sm:grid-cols-2">
+			{methodsOf(provider).map((method) => {
+				const Icon = method === "oauth" ? LogIn : KeyRound;
+				return (
+					<button
+						key={method}
+						type="button"
+						data-testid="connect-method"
+						data-method={method}
+						data-provider={provider.id}
+						disabled={busy}
+						onClick={() => onPick(method)}
+						className={cn(
+							"flex min-w-0 items-start gap-8 rounded-sm border bg-clip-padding p-12 text-left transition-colors hover:bg-control-bg-hovered focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
+							method === "oauth"
+								? "border-primary-muted bg-container-workspace-bg"
+								: "border-border-default bg-container-workspace-bg",
+						)}
+					>
+						<Icon className="mt-2 size-16 shrink-0 text-primary" />
+						<span className="min-w-0">
+							<span className="block tr-title-card text-text-default">
+								{RECOMMENDED_COPY[method].title}
+							</span>
+							<span className="mt-2 block text-text-muted tr-text-metadata">
+								{RECOMMENDED_COPY[method].detail}
+							</span>
+						</span>
+					</button>
+				);
+			})}
+		</div>
 	);
 }

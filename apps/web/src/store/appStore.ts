@@ -927,6 +927,8 @@ function withHostState(runtime: SessionRuntime, hostState: SessionState | null):
 	return next;
 }
 
+export type OnboardingWizardGate = "pending" | "shown" | "hidden";
+
 interface AppState {
 	resourceSnapshots: ChatResourceSnapshots;
 	resourceRevision: number;
@@ -1052,9 +1054,11 @@ interface AppState {
 	localLocales: LocalLocalesSnapshot | null;
 	installLocalLocales: (snapshot: LocalLocalesSnapshot | null) => void;
 	onboardingDismissed: boolean;
+	onboardingWizard: OnboardingWizardGate;
 	customLayoutPresets: LayoutPreset[];
 	toasts: Toast[];
 	setStatus: (status: ConnectionStatus) => void;
+	setOnboardingWizard: (gate: OnboardingWizardGate) => void;
 	installWelcomeSnapshot: (
 		protocolVersion: number,
 		projects: Project[],
@@ -2292,6 +2296,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 	localLocales: null,
 	installLocalLocales: (snapshot) => set({ localLocales: snapshot }),
 	onboardingDismissed: DEFAULT_CONFIG.onboardingDismissed,
+	onboardingWizard: "pending",
 	toasts: [],
 	resourceSnapshots: {},
 	resourceRevision: 0,
@@ -2423,6 +2428,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 				),
 			},
 		})),
+	setOnboardingWizard: (onboardingWizard) => set({ onboardingWizard }),
 	setStatus: (status) =>
 		set((state) => ({
 			status,

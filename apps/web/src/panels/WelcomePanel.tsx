@@ -20,8 +20,6 @@ import { useHasProvider } from "./useHasProvider";
 import { useOpenProject } from "./useOpenProject";
 import { Card, CardSkeleton } from "./WelcomeCard";
 
-type WizardGate = "pending" | "shown" | "hidden";
-
 export function WelcomePanel() {
 	const t = useT();
 	const projects = useAppStore((s) => s.projects);
@@ -33,7 +31,8 @@ export function WelcomePanel() {
 	const hasProvider = useHasProvider();
 	const [dialog, setDialog] = useState<WorkspaceDialogRequest | null>(null);
 	const [hasSpecs, setHasSpecs] = useState<boolean | null>(null);
-	const [wizard, setWizard] = useState<WizardGate>("pending");
+	const wizard = useAppStore((s) => s.onboardingWizard);
+	const setWizard = useAppStore((s) => s.setOnboardingWizard);
 	const [justConnected, setJustConnected] = useState(false);
 	const coldStart = projects.length === 0 && recentProjects.length === 0;
 
@@ -44,7 +43,15 @@ export function WelcomePanel() {
 		} else if (hasProvider === false) {
 			setWizard("shown");
 		}
-	}, [wizard, protocolVersion, supportsOnboarding, onboardingDismissed, coldStart, hasProvider]);
+	}, [
+		wizard,
+		setWizard,
+		protocolVersion,
+		supportsOnboarding,
+		onboardingDismissed,
+		coldStart,
+		hasProvider,
+	]);
 
 	const finishOnboarding = (request: WorkspaceDialogRequest | null) => {
 		setWizard("hidden");

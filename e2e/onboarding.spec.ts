@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import type { AppConfig } from "@thinkrail/contracts";
+import { seedAnalyticsConsent } from "./fixtures/analyticsConsent";
 import { openAppFresh } from "./fixtures/app";
 import { E2E_DATA_DIR, E2E_HOME_DIR } from "./fixtures/paths";
 import { E2eWire } from "./fixtures/wire";
@@ -28,8 +29,9 @@ async function anyProviderConfigured(): Promise<boolean> {
 }
 
 async function connectFirstApiKeyProvider(page: Page, scope: Locator): Promise<string> {
-	await scope.getByTestId("connect-option-api-key-toggle").click();
-	const keyButton = scope.getByTestId("provider-apikey").first();
+	const keyButton = scope
+		.getByTestId("connect-option-recommended")
+		.locator('[data-testid="connect-method"][data-method="api_key"]');
 	const providerId = await keyButton.getAttribute("data-provider");
 	expect(providerId).toBeTruthy();
 	await keyButton.click();
@@ -118,6 +120,38 @@ test("a cold start shows the onboarding wizard once; Skip setup persists", async
 	await expect(wizard).toHaveAttribute("data-step", "connect");
 	await expect(wizard.getByTestId("onboarding-steps").locator("li")).toHaveCount(4);
 	await expect(wizard.getByTestId("connect-provider-options")).toBeVisible();
+	await expect(wizard.getByTestId("onboarding-steps")).toBeVisible();
+
+	await expect(wizard.getByTestId("connect-option-recommended")).toContainText("Anthropic");
+	const list = wizard.getByTestId("connect-provider-list");
+	await expect(list.getByTestId("jetbrains-ai-card")).toBeVisible();
+	const rows = list.getByTestId("provider-signin-row");
+	expect(await rows.count()).toBeGreaterThan(6);
+	await expect(list.locator('[data-provider="anthropic"]')).toHaveCount(0);
+	const oauthFirst = await rows.evaluateAll((els) =>
+		els.map((e) => e.querySelector('[data-testid="provider-signin"]') !== null),
+	);
+	expect(oauthFirst).toEqual([...oauthFirst].sort((a, b) => Number(b) - Number(a)));
+	const search = wizard.getByTestId("connect-provider-search");
+	const listHeight = (await list.boundingBox())?.height;
+	await search.fill("cerebras");
+	await expect(rows).toHaveCount(1);
+	await expect(rows).toHaveAttribute("data-provider", "cerebras");
+	await expect(rows.getByTestId("provider-signin")).toHaveCount(0);
+	await rows.getByTestId("provider-apikey").click();
+	await expect(page.getByTestId("login-dialog")).toBeVisible();
+	await page.getByTestId("login-cancel").click();
+	await expect(page.getByTestId("login-dialog")).toHaveCount(0);
+	await expect(list.getByTestId("jetbrains-ai-card")).toHaveCount(0);
+	await search.fill("anthro");
+	await expect(rows).toHaveCount(1);
+	await expect(rows).toHaveAttribute("data-provider", "anthropic");
+	await search.fill("jetbrains");
+	await expect(list.getByTestId("jetbrains-ai-card")).toBeVisible();
+	await expect(rows).toHaveCount(0);
+	await search.fill("no-such-provider");
+	await expect(list).toContainText("No providers match");
+	expect((await list.boundingBox())?.height).toBe(listHeight);
 
 	await wizard.getByTestId("onboarding-skip").click();
 	await expect(wizard).toHaveCount(0);
@@ -133,6 +167,25 @@ test("a cold start shows the onboarding wizard once; Skip setup persists", async
 	await page.reload();
 	await expect(page.getByTestId("welcome-cta")).toContainText("Start a new project");
 	await expect(page.getByTestId("onboarding-wizard")).toHaveCount(0);
+});
+
+test("the analytics consent prompt waits until the wizard ends", async ({ page, baseURL }) => {
+	await setOnboardingDismissed(false);
+	await seedAnalyticsConsent(baseURL, false, false);
+	try {
+		await openAppFresh(page);
+		test.skip(await anyProviderConfigured(), "an ambient provider makes this host a warm start");
+
+		const wizard = page.getByTestId("onboarding-wizard");
+		await expect(wizard).toHaveAttribute("data-step", "connect");
+		await expect(page.getByTestId("analytics-consent-dialog")).toHaveCount(0);
+
+		await wizard.getByTestId("onboarding-skip").click();
+		await expect(wizard).toHaveCount(0);
+		await expect(page.getByTestId("analytics-consent-dialog")).toBeVisible();
+	} finally {
+		await seedAnalyticsConsent(baseURL, false, true);
+	}
 });
 
 test("the onboarding wizard walks connect → verify → project → build", {
@@ -191,4 +244,26 @@ test("connecting from the Welcome banner closes the stack, toasts, and hands off
 	} finally {
 		await signOut(providerId);
 	}
+});
+
+test("a sign-in abandoned by a reload does not park the next attempt on Working…", async ({
+	page,
+}) => {
+	await openAppFresh(page);
+	test.skip(await anyProviderConfigured(), "an ambient provider hides the banner");
+
+	const startAnthropicSignIn = async () => {
+		await page.getByTestId("welcome-connect-provider").click();
+		await page
+			.getByTestId("connect-provider-dialog")
+			.locator('[data-testid="connect-method"][data-method="oauth"]')
+			.click();
+		await expect(page.getByTestId("login-option").first()).toBeVisible();
+	};
+
+	await startAnthropicSignIn();
+	await page.reload();
+	await startAnthropicSignIn();
+	await page.getByTestId("login-cancel").click();
+	await expect(page.getByTestId("login-dialog")).toHaveCount(0);
 });

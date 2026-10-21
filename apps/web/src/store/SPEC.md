@@ -509,7 +509,10 @@ re-read while a server starts. The state vocabulary and the attention/active pre
   spawning remains server-owned — the Terminal, Line width, Chat, shared Layout catalog, Privacy, provider
   controls, and shell quota read sides. Analytics preference and confirmation default independently to false;
   the store never upgrades a preference to confirmation. A selector combines host capability, hydrated
-  configuration, and absent confirmation to drive the one first-launch prompt. Persisted preference priming
+  configuration, and absent confirmation to drive the one first-launch prompt; `selectFirstRunPromptsHeld`
+holds it (and the interview invitation) while the client-local **`onboardingWizard`** gate
+(`pending | shown | hidden`, set by Welcome through `setOnboardingWizard`) is shown, or still pending on a
+cold-start-shaped store (capable host, not dismissed, no open or recent projects). Persisted preference priming
   and final choice updates converge through `applyConfig`; the dialog's visual draft remains component-local.
   **`chatMessageOrder: ChatMessageOrder`** and **`streamingResponseMovement:
   StreamingResponseMovement`** are instead client-local presentation preferences, hydrated together by

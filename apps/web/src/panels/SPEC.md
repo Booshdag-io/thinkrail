@@ -366,11 +366,15 @@ transport error degrades to *not* nagging (offline ≠ "no provider"). All provi
 Settings, not here (the always-on strip is gone).
 
 **First connection.** `ConnectProviderDialog` is an onboarding overlay over `ConnectProviderOptions` — the
-same body the onboarding wizard embeds: **three choices only** — **JetBrains AI** (marked Recommended; the
-real `JetBrainsAiCard`, so its Central state machine is never duplicated), **Use my subscription**
-(expands to the unconfigured `canOAuth` providers) and **Bring your own API key** (expands to the
-unconfigured `canApiKey` providers, capped with a "Show N more" expander) — plus a **See all providers &
-advanced settings** link that closes the overlay and opens Settings → Providers. No quota or other global
+same body the onboarding wizard embeds: **Anthropic** on top (marked Recommended while unconfigured —
+most users arrive from the pi community on a Claude plan or key; its two sign-in methods shown up front as
+described choices), then **one
+searchable list** of every other unconfigured provider in a fixed-height scroll area (~40 providers never grow
+the overlay, and filtering never resizes it): the real `JetBrainsAiCard` pinned first (so its Central state machine is never duplicated),
+then OAuth-capable providers, then key-only ones, each row the Settings `ProviderRow` with whichever of
+Sign in / API key it supports. The unfiltered list skips the recommended provider; a search covers every provider, it
+included. One list rather than separate subscription / API-key buckets, because users look for a provider
+by name, not by auth method. A **See all providers & advanced settings** link closes the overlay and opens Settings → Providers. No quota or other global
 settings appear here; the full `ProvidersSettings` stays the power-user surface. Data and login wiring are
 the shared **`useProviderAuth`** hook, which `ProvidersSettings` uses too: one `provider.status` loader
 (re-read on `providerVersion` and on a successful login), `startLogin` / `logout`, and the store-driven
@@ -394,12 +398,13 @@ specs with the agent** switch (default **on**) makes the caller open `NewWorkspa
 the host supports `ONBOARDING_PROTOCOL_VERSION`, `AppConfig.onboardingDismissed` is false, there are no
 open or recent projects, and `useHasProvider` reports none. The decision is **latched once** per mount so
 connecting a provider or opening a project mid-wizard does not tear it down. Steps, shown as a 4-step
-progress header: **Connect** (`ConnectProviderOptions`; advances when a provider becomes configured) →
+progress strip under each step's title: **Connect** (`ConnectProviderOptions`; advances when a provider becomes configured) →
 **Verify** (no tokens spent: the connected provider, its `model.list` count and the `model.default` model
 new chats start with; zero models warns and offers Back) → **Project** (Start a new project / Open a
 project through `useOpenProject`) → **Build** (the opened project with "Set up project" and "Start
 building", each handing the `NewWorkspaceDialog` request back to Welcome). **Skip setup** is on every step.
-Finishing or skipping writes `onboardingDismissed: true`, so a returning user — even one who later removes
+The gate lives in the store (`onboardingWizard`: pending → shown | hidden) so shell can hold first-run
+prompts while it is undecided. Finishing or skipping writes `onboardingDismissed: true`, so a returning user — even one who later removes
 every project and provider — gets the regular Welcome; a failed write still closes the wizard locally.
 
 Beneath it, **`ProjectTrustNotice`** is the pre-workspace trust surface (so trust is reachable with no
@@ -878,7 +883,11 @@ a project picker, the prompt hero, and the reused
   [[submodule-web-notifications]].
   **`PrivacySettings`** manages the additional-data preference and
   confirmation together; the event contract belongs to [[submodule-server-analytics]].
-  **`AnalyticsConsentDialog`** mounts once through shell after a capable host's unconfirmed config hydrates.
+  **`AnalyticsConsentDialog`** mounts once through shell after a capable host's unconfirmed config hydrates,
+  held back (with the interview invitation) while the cold-start onboarding wizard may still show or is
+  showing (`selectFirstRunPromptsHeld`): a new user meets the product before a privacy question, and sharing
+  stays off until the dialog mounts, so holding it never collects without asking — the cost is that the
+  wizard's own steps carry only basic events.
   It initializes the draft switch on and immediately persists `{ analyticsEnabled: true }`; persistence and
   broadcast activate the host gate while the dialog stays open. **Done**, Close, Escape, and backdrop persist
   the current draft with `analyticsConsentConfirmed: true`, so the ordinary result is on. Switching off
