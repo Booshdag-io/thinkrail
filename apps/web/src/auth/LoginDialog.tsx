@@ -18,7 +18,7 @@ import {
 import { cn } from "@thinkrail/ui/utils";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { copyText } from "@/lib";
-import { loginOptionParts, loginSelectMessage } from "./loginOptions";
+import { loginOptionParts, loginPromptMessage, loginSelectMessage } from "./loginOptions";
 import type { LoginState } from "./loginState";
 import { redirectsToLoopback, uiServedFromLoopback } from "./uiOrigin";
 
@@ -258,7 +258,9 @@ export function LoginDialog({
 										{t("auth.login.pasteHint")}
 									</p>
 								) : state.input.message ? (
-									<p className="text-text-muted tr-text-ui">{state.input.message}</p>
+									<p className="text-text-muted tr-text-ui">
+										{loginPromptMessage(state.input.message)}
+									</p>
 								) : null}
 								<input
 									ref={promptRef}

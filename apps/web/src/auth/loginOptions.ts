@@ -22,3 +22,10 @@ export function loginOptionParts(label: string): {
 		recommended: note.toLowerCase() === "default",
 	};
 }
+
+export function loginPromptMessage(message: string): string {
+	return message
+		.trim()
+		.replace(/\s*\(blank for ([^()]+)\)$/i, ". Leave empty for $1.")
+		.replace(/press Enter( to continue)?/gi, "choose Continue");
+}

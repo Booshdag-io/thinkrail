@@ -33,14 +33,16 @@ not here — `auth` stays presentational + types, so nothing here imports `store
     **auto-opens** in a new tab best-effort on arrival; a `select`/`prompt` input — a `select` renders as the
     app's choice cards, its pi terminal phrasing tidied by `loginOptions` (the message loses its trailing
     colon; an option label's trailing `(…)` becomes the card's muted detail line — `(default)` reads
-    "Recommended", and pi's terminal jargon `(headless)` is explained in plain words); a `secret`-flagged
+    "Recommended", and pi's terminal jargon `(headless)` is explained in plain words; a prompt's terminal hints become dialog copy — a trailing `(blank for X)` becomes a
+    plain "Leave empty for X." sentence (GitHub Copilot's Enterprise-domain step) and "press Enter" reads "choose
+    Continue" (Bedrock's credential-chain step)); a `secret`-flagged
     prompt renders **masked** (API keys, issue #97); progress/working spinner — while a sign-in URL is
     live and no required prompt is pending, the spinner reads host copy ("Waiting for you to finish
     signing in…") instead of pi's terminal-oriented progress (loopback ports, callback URLs);
     terminal success/error) and calls back `onReply(value)` / `onCancel()` / `onClose()`. Copy says
     **"Connect"**, not "Sign in" — one dialog serves OAuth and API-key entry alike. Themed with token
     utilities only; `@remixicon/react` icons; shadcn `Dialog`/`Button`.
-  - `loginOptions` — `loginSelectMessage` / `loginOptionParts`: the pure presentation split above.
+  - `loginOptions` — `loginSelectMessage` / `loginOptionParts` / `loginPromptMessage`: the pure presentation split above.
   - `uiOrigin` — `isLoopbackHost` / `uiServedFromLoopback`: whether the UI was opened via a loopback host,
     the dialog's proxy for "the browser runs on the ThinkRail host machine"; `redirectsToLoopback`:
     whether an authorize URL's `redirect_uri` / `callback_url` is an `http:` loopback address.
