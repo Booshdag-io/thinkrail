@@ -1,8 +1,12 @@
 import {
 	RiAlertLine as Alert,
 	RiArrowLeftLine as ArrowLeft,
+	RiArrowRightLine as ArrowRight,
 	RiCheckLine as Check,
+	RiCpuLine as Cpu,
+	RiFileTextLine as FileText,
 	RiFolderOpenLine as FolderOpen,
+	RiGitBranchLine as GitBranch,
 	RiRocketLine as Rocket,
 	RiSparkling2Line as Sparkles,
 } from "@remixicon/react";
@@ -11,6 +15,7 @@ import { Button } from "@thinkrail/ui/button";
 import { cn } from "@thinkrail/ui/utils";
 import { useEffect, useState } from "react";
 import { SkeletonRows } from "@/components/Skeleton";
+import { PRODUCT_NAME } from "@/constants/branding";
 import { useAppStore } from "@/store";
 import { getTransport } from "@/transport";
 import { AddProjectMenu } from "./AddProjectMenu";
@@ -20,9 +25,27 @@ import { useOpenProject } from "./useOpenProject";
 import { useProviderAuth } from "./useProviderAuth";
 import { Card } from "./WelcomeCard";
 
-type Step = "connect" | "verify" | "project" | "build";
+type Step = "intro" | "connect" | "verify" | "project" | "build";
 
-const STEPS: { id: Step; label: string }[] = [
+const INTRO_BEATS = [
+	{
+		icon: GitBranch,
+		title: "Worktrees, not your working tree",
+		detail: "Every task runs on its own branch, so main stays clean until you merge.",
+	},
+	{
+		icon: FileText,
+		title: "Specs are the ground truth",
+		detail: "The agent reads and maintains your project's specs, so intent outlives the chat.",
+	},
+	{
+		icon: Cpu,
+		title: "A thin host, a real engine",
+		detail: "The pi coding agent runs models and skills; ThinkRail gives it an IDE.",
+	},
+];
+
+const STEPS: { id: Exclude<Step, "intro">; label: string }[] = [
 	{ id: "connect", label: "Connect" },
 	{ id: "verify", label: "Verify" },
 	{ id: "project", label: "Project" },
@@ -34,7 +57,7 @@ export function OnboardingWizard({
 }: {
 	onFinish: (request: WorkspaceDialogRequest | null) => void;
 }) {
-	const [step, setStep] = useState<Step>("connect");
+	const [step, setStep] = useState<Step>("intro");
 	const [provider, setProvider] = useState<ProviderStatus | null>(null);
 	const [project, setProject] = useState<Project | null>(null);
 	const settingsOpen = useAppStore((s) => s.settingsOpen);
@@ -54,12 +77,43 @@ export function OnboardingWizard({
 			data-step={step}
 			className="flex w-full max-w-[640px] flex-col items-center gap-24"
 		>
-			{step === "connect" ? (
+			{step === "intro" ? (
+				<div
+					data-testid="onboarding-intro"
+					className="flex flex-col items-center gap-24 text-center"
+				>
+					<div className="flex flex-col items-center gap-8">
+						<span className="tr-text-eyebrow text-text-muted">Welcome to</span>
+						<h1 data-testid="welcome-title" className="tr-brand-hero text-primary">
+							{PRODUCT_NAME}
+						</h1>
+						<p className="tr-heading-sm text-text-default">
+							The agentic IDE that gets better every time you use it.
+						</p>
+					</div>
+					<ul className="grid w-full gap-12 sm:grid-cols-3">
+						{INTRO_BEATS.map(({ icon: Icon, title, detail }) => (
+							<li
+								key={title}
+								className="flex flex-col gap-8 rounded-sm border border-border-default bg-clip-padding bg-container-workspace-bg p-16 text-left"
+							>
+								<Icon className="size-16 text-primary" />
+								<span className="tr-title-card text-text-default">{title}</span>
+								<span className="text-text-muted tr-text-metadata">{detail}</span>
+							</li>
+						))}
+					</ul>
+					<Button data-testid="onboarding-start" onClick={() => setStep("connect")}>
+						Get started
+						<ArrowRight className="size-16" />
+					</Button>
+				</div>
+			) : step === "connect" ? (
 				<>
 					<StepTitle
 						step="connect"
-						title="Welcome to ThinkRail"
-						subtitle="First, pick how the agent will run."
+						title="Connect a model"
+						subtitle="Pick how the agent will run."
 					/>
 					<div className="w-full">
 						<ConnectProviderOptions
@@ -152,7 +206,7 @@ export function OnboardingWizard({
 	);
 }
 
-function StepHeader({ current }: { current: Step }) {
+function StepHeader({ current }: { current: Exclude<Step, "intro"> }) {
 	const currentIndex = STEPS.findIndex((s) => s.id === current);
 	return (
 		<ol data-testid="onboarding-steps" className="flex items-center gap-8">
@@ -197,7 +251,15 @@ function StepHeader({ current }: { current: Step }) {
 	);
 }
 
-function StepTitle({ step, title, subtitle }: { step: Step; title: string; subtitle: string }) {
+function StepTitle({
+	step,
+	title,
+	subtitle,
+}: {
+	step: Exclude<Step, "intro">;
+	title: string;
+	subtitle: string;
+}) {
 	return (
 		<div className="flex flex-col items-center gap-16 text-center">
 			<div className="flex flex-col items-center gap-8">

@@ -399,8 +399,11 @@ specs with the agent** switch (default **on**) makes the caller open `NewWorkspa
 **Cold-start onboarding wizard.** `OnboardingWizard` replaces the Welcome cards only on a true cold start:
 the host supports `ONBOARDING_PROTOCOL_VERSION`, `AppConfig.onboardingDismissed` is false, there are no
 open or recent projects, and `useHasProvider` reports none. The decision is **latched once** per mount so
-connecting a provider or opening a project mid-wizard does not tear it down. Steps, shown as a 4-step
-progress strip under each step's title: **Connect** (`ConnectProviderOptions`; advances when a provider becomes configured) →
+connecting a provider or opening a project mid-wizard does not tear it down. It opens on an **intro**
+(the brand title, the landing page's tagline and its three "why" beats — worktrees, specs, pi as the
+engine — as small cards, and **Get started**; the copy follows thinkrail.ai so first run and landing say the same thing) — a first-time user meets the
+product before a wall of providers. Then the steps, shown as a 4-step progress strip under each step's
+title (the intro is not a step): **Connect** (`ConnectProviderOptions`; advances when a provider becomes configured) →
 **Verify** (no tokens spent: the connected provider, its `model.list` count and the `model.default` model
 new chats start with; zero models warns and offers Back) → **Project** (Start a new project / Open a
 project through `useOpenProject`) → **Build** (the opened project with "Set up project" and "Start

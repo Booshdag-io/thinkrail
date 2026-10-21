@@ -118,6 +118,10 @@ test("a cold start shows the onboarding wizard once; Skip setup persists", async
 	test.skip(await anyProviderConfigured(), "an ambient provider makes this host a warm start");
 
 	const wizard = page.getByTestId("onboarding-wizard");
+	await expect(wizard).toHaveAttribute("data-step", "intro");
+	await expect(wizard.getByTestId("welcome-title")).toHaveText("ThinkRail");
+	await expect(wizard.getByTestId("connect-provider-options")).toHaveCount(0);
+	await wizard.getByTestId("onboarding-start").click();
 	await expect(wizard).toHaveAttribute("data-step", "connect");
 	await expect(wizard.getByTestId("onboarding-steps").locator("li")).toHaveCount(4);
 	await expect(wizard.getByTestId("connect-provider-options")).toBeVisible();
@@ -178,7 +182,7 @@ test("the analytics consent prompt waits until the wizard ends", async ({ page, 
 		test.skip(await anyProviderConfigured(), "an ambient provider makes this host a warm start");
 
 		const wizard = page.getByTestId("onboarding-wizard");
-		await expect(wizard).toHaveAttribute("data-step", "connect");
+		await expect(wizard).toHaveAttribute("data-step", "intro");
 		await expect(page.getByTestId("analytics-consent-dialog")).toHaveCount(0);
 
 		await wizard.getByTestId("onboarding-skip").click();
@@ -199,6 +203,7 @@ test("the onboarding wizard walks connect → verify → project → build", {
 	const wizard = page.getByTestId("onboarding-wizard");
 	let providerId: string | null = null;
 	try {
+		await wizard.getByTestId("onboarding-start").click();
 		providerId = await connectFirstApiKeyProvider(page, wizard);
 		await expect(wizard).toHaveAttribute("data-step", "verify");
 		await expect(page.getByTestId("login-dialog")).toHaveCount(0);
