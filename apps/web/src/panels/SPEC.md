@@ -283,7 +283,9 @@ treatment.
   `scopeKey` / `diffTabId(workspaceId, scope, path)` / `diffTabName` / `scopeLabel` and the `splitPath`
   used by both the flat list's path rows and the diff header's path chip. The **branch combobox** is the
   shared **`BranchPicker`** (searchable, grouped Remote/Local, current pick check-marked, refreshed on every
-  open with an explicit Refresh control as well) — one component for the New-Workspace dialog's *base* branch
+  open with an explicit Refresh control as well; a repo with no remote branches — a fresh **Start a new project**
+  repo — marks the trigger "· local" and says in the header that its branches live only on this computer, so a
+  bare `main` is not mistaken for a GitHub branch) — one component for the New-Workspace dialog's *base* branch
   and the Changes header's *target* branch. **Remote is two layers**: one `Remote` parent over a subgroup per
   host-identified remote (`origin`, `upstream`), whose rows show branch names without repeating the remote.
   The full ref remains every row's selection identity, search value, and `data-branch`; the browser never

@@ -81,6 +81,7 @@ test("Start a new project creates the repo under ~/thinkrail and seeds the setup
 	const workspaceDialog = page.getByTestId("new-workspace-dialog");
 	await expect(workspaceDialog).toBeVisible();
 	await expect(workspaceDialog.getByTestId("ws-prompt")).toHaveValue(SETUP_PROMPT);
+	await expect(workspaceDialog.getByTestId("ws-branch-picker")).toContainText("main· local");
 	expect(existsSync(join(PROJECTS_PARENT, "weather-app", ".git"))).toBe(true);
 	await expect(page.getByTestId("project-item").filter({ hasText: "weather-app" })).toBeVisible();
 });
