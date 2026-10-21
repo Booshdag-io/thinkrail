@@ -226,14 +226,7 @@ export function LoginDialog({
 												)}
 											>
 												<span className="min-w-0 flex-1">
-													<span className="flex flex-wrap items-center gap-8">
-														<span className="tr-title-card text-text-default">{title}</span>
-														{recommended ? (
-															<span className="rounded-full border border-primary-muted bg-clip-padding bg-primary-subtle px-8 py-2 tr-text-label-pill text-primary">
-																Recommended
-															</span>
-														) : null}
-													</span>
+													<span className="block tr-title-card text-text-default">{title}</span>
 													{detail ? (
 														<span className="mt-2 block text-text-muted tr-text-metadata">
 															{detail}

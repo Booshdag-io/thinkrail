@@ -1,3 +1,8 @@
+const NOTE_COPY: Record<string, string> = {
+	default: "Recommended",
+	headless: "If the browser can't reach this computer — paste a code instead.",
+};
+
 export function loginSelectMessage(message: string): string {
 	return message.trim().replace(/:$/, "");
 }
@@ -10,10 +15,10 @@ export function loginOptionParts(label: string): {
 	const match = /^(.*\S)\s*\(([^()]+)\)$/.exec(label.trim());
 	if (!match?.[1] || !match[2]) return { title: label.trim(), recommended: false };
 	const note = match[2].trim();
-	if (note.toLowerCase() === "default") return { title: match[1], recommended: true };
+	const known = NOTE_COPY[note.toLowerCase()];
 	return {
 		title: match[1],
-		detail: note.charAt(0).toUpperCase() + note.slice(1),
-		recommended: false,
+		detail: known ?? note.charAt(0).toUpperCase() + note.slice(1),
+		recommended: note.toLowerCase() === "default",
 	};
 }

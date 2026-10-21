@@ -32,8 +32,8 @@ not here — `auth` stays presentational + types, so nothing here imports `store
     a device code with a **clickable verification link** that also
     **auto-opens** in a new tab best-effort on arrival; a `select`/`prompt` input — a `select` renders as the
     app's choice cards, its pi terminal phrasing tidied by `loginOptions` (the message loses its trailing
-    colon; an option label's trailing `(…)` becomes the card's detail line, and `(default)` a Recommended
-    pill); a `secret`-flagged
+    colon; an option label's trailing `(…)` becomes the card's muted detail line — `(default)` reads
+    "Recommended", and pi's terminal jargon `(headless)` is explained in plain words); a `secret`-flagged
     prompt renders **masked** (API keys, issue #97); progress/working spinner — while a sign-in URL is
     live and no required prompt is pending, the spinner reads host copy ("Waiting for you to finish
     signing in…") instead of pi's terminal-oriented progress (loopback ports, callback URLs);
