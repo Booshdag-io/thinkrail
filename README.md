@@ -121,7 +121,9 @@ thinkrail ~/code/my-repo
 ```
 
 `thinkrail` needs `git` on your PATH and a model provider — sign in with JetBrains AI from the app or use
-your own provider credentials. `thinkrail --help` lists the flags; `thinkrail --version` prints the build.
+your own provider credentials. The first launch walks you through connecting a provider and picking a
+project; **Start a new project** creates an empty git repository (under `~/thinkrail` by default), so you
+don't need one ready. `thinkrail --help` lists the flags; `thinkrail --version` prints the build.
 
 <details>
 <summary><strong>Nightly builds, pinned versions, updates, and uninstall</strong></summary>

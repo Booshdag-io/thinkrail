@@ -1051,6 +1051,7 @@ interface AppState {
 	locale: string;
 	localLocales: LocalLocalesSnapshot | null;
 	installLocalLocales: (snapshot: LocalLocalesSnapshot | null) => void;
+	onboardingDismissed: boolean;
 	customLayoutPresets: LayoutPreset[];
 	toasts: Toast[];
 	setStatus: (status: ConnectionStatus) => void;
@@ -1427,6 +1428,7 @@ function configPatch(config: AppConfig) {
 			? config.disabledExtensions
 			: DEFAULT_CONFIG.disabledExtensions,
 		locale: isLocalePreference(config.locale) ? config.locale : DEFAULT_CONFIG.locale,
+		onboardingDismissed: config.onboardingDismissed === true,
 	};
 }
 
@@ -2289,6 +2291,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 	locale: DEFAULT_CONFIG.locale,
 	localLocales: null,
 	installLocalLocales: (snapshot) => set({ localLocales: snapshot }),
+	onboardingDismissed: DEFAULT_CONFIG.onboardingDismissed,
 	toasts: [],
 	resourceSnapshots: {},
 	resourceRevision: 0,

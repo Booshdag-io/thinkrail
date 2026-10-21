@@ -28,6 +28,7 @@ import {
 	MCP_TOOL_GRANTS_PROTOCOL_VERSION,
 	MODEL_PICKER_PROTOCOL_VERSION,
 	normalizeSessionTitle,
+	ONBOARDING_PROTOCOL_VERSION,
 	PLAN_REVIEW_SUBAGENT_PROTOCOL_VERSION,
 	PLAN_SUMMARY_GENERATION_PROTOCOL_VERSION,
 	PROJECT_RENAME_PROTOCOL_VERSION,
@@ -244,6 +245,13 @@ test("review details and the GitHub review actions are pinned to v88", () => {
 	expect(WS_METHODS.prMerge).toBe("pr.merge");
 	expect(WS_METHODS.prReopen).toBe("pr.reopen");
 	expect(WS_METHODS.workspaceDeleteRemoteBranch).toBe("workspace.deleteRemoteBranch");
+});
+
+test("project create and the onboarding dismissal are pinned to v89", () => {
+	expect(PROTOCOL_VERSION).toBe(89);
+	expect(ONBOARDING_PROTOCOL_VERSION).toBe(89);
+	expect(WS_METHODS.projectCreate).toBe("project.create");
+	expect(DEFAULT_CONFIG.onboardingDismissed).toBe(false);
 });
 
 test("MCP server management, status and chat resources are pinned to v83", () => {

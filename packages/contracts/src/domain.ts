@@ -928,6 +928,8 @@ export interface AppConfig extends ThemePreference {
 	disabledExtensions: string[];
 	/** UI language: `"system"` (follow the browser) or a BCP-47 tag; an unavailable tag renders English. */
 	locale: string;
+	/** The user finished or skipped the cold-start onboarding wizard. */
+	onboardingDismissed: boolean;
 }
 
 export interface ExtensionCatalogEntry {
@@ -1070,6 +1072,7 @@ export const DEFAULT_CONFIG: AppConfig = {
 	settleIdleDays: SETTLE_IDLE_DAYS.default,
 	disabledExtensions: [],
 	locale: SYSTEM_LOCALE_PREFERENCE,
+	onboardingDismissed: false,
 };
 
 export function normalizeThemePreference(value: unknown): ThemePreference {

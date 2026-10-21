@@ -371,8 +371,9 @@ default, narrow cross-ring guards, and the quit-confirmation rule both clients d
   terminalWindowsShell, composerGrowthLimit, chatLineWidth, fileLineWidth, chatLineWidthBounded,
   fileLineWidthBounded, customLayoutPresets, defaultModel?, defaultEffort?, reviewModel?, reviewEffort?,
   favoriteModels, recentModels, reviewAutoFix, agentReviewEnabled, subagentsEnabled, subagentMaxConcurrent,
-  jbcentralQuotaEnabled, jbcentralQuotaRefreshSeconds, disabledExtensions }` — an extensible bag; the line-width fields join
-  the wire at protocol v61 and `terminalWindowsShell` at v62. **`DEFAULT_MODEL_PROTOCOL_VERSION`** pins
+  jbcentralQuotaEnabled, jbcentralQuotaRefreshSeconds, disabledExtensions, onboardingDismissed }` — an extensible bag; the line-width fields join
+  the wire at protocol v61 and `terminalWindowsShell` at v62. `onboardingDismissed` (v89, default `false`)
+  records that the user finished or skipped the cold-start onboarding wizard, so it never returns. **`DEFAULT_MODEL_PROTOCOL_VERSION`** pins
   v72's AppConfig `defaultModel`/`defaultEffort` and host-side default resolution; the Settings controls are
   hidden against older hosts. `defaultModel` is a full allowlisted `WireModel`, `defaultEffort` is an optional
   `ThinkingLevel`, and `settings.update` accepts `null` to clear either optional value.
@@ -549,7 +550,10 @@ default, narrow cross-ring guards, and the quit-confirmation rule both clients d
   changes only the display `name` — path, slug, and id stay — and broadcasts the full `project.updated`;
   `PROJECT_RENAME_PROTOCOL_VERSION` pins its v85 introduction so a newer client omits the action against
   an older host), **`project.inspect`** (classify a path) + **`project.init`**
-  (`git init` + commit, then open) + **`project.hasSpecs`** (lazy per-project "contains a registered
+  (`git init` + commit, then open) + **`project.create`** (`{ parentPath, name }` → the opened `Project`:
+  make the folder `name` under `parentPath`, creating missing parents, then the same bootstrap as init;
+  `ONBOARDING_PROTOCOL_VERSION` pins its v89 introduction together with `AppConfig.onboardingDismissed`)
+  + **`project.hasSpecs`** (lazy per-project "contains a registered
   spec?" for the Welcome screen — a full-tree walk, so requested only for the shown project,
   never eagerly for every project) / `workspace.*` — notably **`workspace.list { projectId,
   includeDiffStats? }`**, where omitted/true preserves the existing full rows with computed aggregates and
@@ -739,7 +743,8 @@ default, narrow cross-ring guards, and the quit-confirmation rule both clients d
   in-app login stream (a `LoginPush`
   per frame, keyed by `loginId`; the sibling of `pi.extensionUi`, since a login runs on the Welcome screen
   before any session exists) / **`provider.changed`** — a data-free invalidation broadcast after a watched
-  Central state/rebuild result changes the host-authoritative provider status or current model generation;
+  Central state/rebuild result changes the host-authoritative provider status or current model generation,
+  or a provider login (not an MCP sign-in) succeeds;
   clients re-read `provider.status` and invalidate `model.list`, so no raw provider/model data rides the push /
   `terminal.data` + **`terminal.exit`** + **`terminal.detached`** (the addressed terminal channels — sent to
   the single *attached* client rather than broadcast, so a shell's bytes never

@@ -58,8 +58,9 @@ not here — `auth` stays presentational + types, so nothing here imports `store
   starts a login (`provider.loginStart` with `type` `"oauth"` or `"api_key"` — both auth routes ride the
   same channel, issue #97 — → `store.beginLogin`), mounts `LoginDialog` from `store.activeLogin`,
   wires `onReply`/`onCancel` to `provider.loginReply`/`loginCancel`, and re-fetches `provider.status` when a
-  login (or logout) settles; it ignores a login that carries a `target`. (The Welcome screen only carries
-  `panels/ProviderWarningBanner`, which opens Settings → Providers when no provider is connected.)
+  login (or logout) settles; it ignores a login that carries a `target`. That wiring lives once in
+  `panels/useProviderAuth`, shared with the onboarding connect surfaces (`ConnectProviderDialog`, the
+  wizard's Connect step); exactly one of them mounts the dialog at a time — Settings while it is open.
 - `panels/McpSettings` is the second integration piece: `mcp.login` / `mcp.testConnection` return a login id
   whose `provider.login` frames reach only the starting connection; it begins the login with the server as
   `target`, mounts the same `LoginDialog` only for a targeted login, and answers through the same
