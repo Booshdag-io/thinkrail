@@ -890,7 +890,7 @@ a project picker, the prompt hero, and the reused
   confirmation together; the event contract belongs to [[submodule-server-analytics]].
   **`AnalyticsConsentDialog`** mounts once through shell after a capable host's unconfirmed config hydrates,
   held back (with the interview invitation) while the cold-start onboarding wizard may still show or is
-  showing (`selectFirstRunPromptsHeld`): a new user meets the product before a privacy question, and sharing
+  showing (`selectOnboardingActive`): a new user meets the product before a privacy question, and sharing
   stays off until the dialog mounts, so holding it never collects without asking — the cost is that the
   wizard's own steps carry only basic events.
   It initializes the draft switch on and immediately persists `{ analyticsEnabled: true }`; persistence and

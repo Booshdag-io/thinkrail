@@ -120,6 +120,7 @@ test("a cold start shows the onboarding wizard once; Skip setup persists", async
 	const wizard = page.getByTestId("onboarding-wizard");
 	await expect(wizard).toHaveAttribute("data-step", "intro");
 	await expect(wizard.getByTestId("welcome-title")).toHaveText("ThinkRail");
+	await expect(page.getByTestId("left-nav")).toHaveCount(0);
 	await expect(wizard.getByTestId("connect-provider-options")).toHaveCount(0);
 	await wizard.getByTestId("onboarding-start").click();
 	await expect(wizard).toHaveAttribute("data-step", "connect");
@@ -161,6 +162,7 @@ test("a cold start shows the onboarding wizard once; Skip setup persists", async
 	await wizard.getByTestId("onboarding-skip").click();
 	await expect(wizard).toHaveCount(0);
 	await expect(page.getByTestId("welcome-cta")).toContainText("Start a new project");
+	await expect(page.getByTestId("left-nav")).toBeVisible();
 	await expect
 		.poll(
 			() =>

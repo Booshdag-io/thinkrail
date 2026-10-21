@@ -115,7 +115,7 @@ export function selectSupportsOnboarding(state: ProtocolState): boolean {
 	return state.protocolVersion !== null && state.protocolVersion >= ONBOARDING_PROTOCOL_VERSION;
 }
 
-export function selectFirstRunPromptsHeld(
+export function selectOnboardingActive(
 	state: ProtocolState & {
 		onboardingWizard: "pending" | "shown" | "hidden";
 		onboardingDismissed: boolean;
