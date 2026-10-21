@@ -6,9 +6,9 @@ import {
 } from "@remixicon/react";
 import type { ProviderStatus } from "@thinkrail/contracts";
 import { Button } from "@thinkrail/ui/button";
+import { SkeletonRows } from "@thinkrail/ui/skeleton";
 import { cn } from "@thinkrail/ui/utils";
 import { useEffect, useRef, useState } from "react";
-import { SkeletonRows } from "@/components/Skeleton";
 import { toast } from "@/store";
 import { getTransport } from "@/transport";
 import { JetBrainsAiCard } from "./JetBrainsAiCard";

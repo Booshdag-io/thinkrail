@@ -12,9 +12,9 @@ import {
 } from "@remixicon/react";
 import type { Project, ProviderStatus, WireModel } from "@thinkrail/contracts";
 import { Button } from "@thinkrail/ui/button";
+import { SkeletonRows } from "@thinkrail/ui/skeleton";
 import { cn } from "@thinkrail/ui/utils";
 import { useEffect, useState } from "react";
-import { SkeletonRows } from "@/components/Skeleton";
 import { PRODUCT_NAME } from "@/constants/branding";
 import { useAppStore } from "@/store";
 import { getTransport } from "@/transport";
