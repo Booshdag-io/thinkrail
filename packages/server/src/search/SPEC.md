@@ -49,7 +49,8 @@ skipping plan files whose session has no transcript on disk (orphans).
 - **Per-client superseding:** the service remembers the latest `seq` per `clientKey`; an older `seq`
   is answered `{ superseded: true }` immediately, and a query that was overtaken while it awaited the
   history index returns `superseded` instead of stale groups. `seq` is the client's monotonic counter
-  across reopen and reconnect.
+  across reopen and reconnect; `forgetClient` drops a reaped client's counter (the host calls it from
+  its client reap).
 - **Budgets:** each provider gets `SEARCH_BUDGET.providerMs`, all within `queryMs`; a provider that
   runs out of time returns what it has as `truncated`. A throwing provider reports `failed` (the
   client never polls a failed group). A cold file list reports `indexing` and starts loading

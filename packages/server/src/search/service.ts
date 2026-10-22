@@ -49,6 +49,7 @@ export interface SearchService {
 	query(clientKey: string, params: WsParams<"search.query">): Promise<SearchQueryResult>;
 	preview(target: SearchPreviewTarget): Promise<SearchPreviewResult>;
 	invalidateRoot(root: string): void;
+	forgetClient(clientKey: string): void;
 }
 
 export const SEARCH_BUDGET = {
@@ -255,6 +256,10 @@ export function createSearchService(readers: SearchReaders): SearchService {
 		invalidateRoot(root) {
 			files.invalidate(root);
 			readers.invalidateSpecs(root);
+		},
+
+		forgetClient(clientKey) {
+			latestSeq.delete(clientKey);
 		},
 	};
 }
