@@ -55,7 +55,11 @@ queue the diff spans every group entry ahead, so a site PR queued behind an app 
 Conformance, lint/typecheck and unit tests always run; they are cheap and cover the website too.
 
 Browser jobs retry the Playwright browser download a bounded number of times, a network fault that
-otherwise ejects an entry from the merge queue; the tests themselves are never retried at job level.
+otherwise ejects an entry from the merge queue; the tests themselves are never retried at job level. They
+install Chromium without `--with-deps`: the runner image already carries its shared libraries, and the extra
+apt packages (CJK/Thai/X fonts) feed no assertion while their Ubuntu-mirror download was the slowest step of
+the job, often for minutes. A missing library fails Chromium's launch loudly. The browsers themselves are not
+cached: the Playwright CDN download takes seconds, no slower than an Actions-cache restore of the same bytes.
 Native artifact smokes run only in shard 1: repeating an identical probe per shard adds no coverage and
 multiplies exposure to runner-environment faults.
 
