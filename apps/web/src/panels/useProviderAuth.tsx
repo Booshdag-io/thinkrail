@@ -1,4 +1,5 @@
 import type { ProviderStatusReport } from "@thinkrail/contracts";
+import { t as translate } from "@thinkrail/locales/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { LoginDialog } from "@/auth";
 import { selectLoginBusy, toast, useAppStore } from "@/store";
@@ -65,7 +66,7 @@ export function useProviderAuth({ ownsLoginDialog }: { ownsLoginDialog: boolean 
 			const { loginId } = await getTransport().request("provider.loginStart", { providerId, type });
 			useAppStore.getState().beginLogin(loginId, providerId);
 		} catch (err) {
-			toast.error(errorText(err), "Couldn't start the connection");
+			toast.error(errorText(err), translate("settings.providers.startFailed"));
 		} finally {
 			useAppStore.getState().finishLoginStart();
 			setBusyProvider(null);
@@ -78,7 +79,7 @@ export function useProviderAuth({ ownsLoginDialog }: { ownsLoginDialog: boolean 
 			try {
 				await getTransport().request("provider.logout", { providerId });
 			} catch (err) {
-				toast.error(errorText(err), "Couldn't sign out");
+				toast.error(errorText(err), translate("settings.providers.signOutFailed"));
 				return;
 			} finally {
 				setBusyProvider(null);
@@ -102,7 +103,9 @@ export function useProviderAuth({ ownsLoginDialog }: { ownsLoginDialog: boolean 
 				onReply={(value) => {
 					getTransport()
 						.request("provider.loginReply", { loginId: activeLogin.loginId, value })
-						.catch((err) => toast.error(errorText(err), "Couldn't submit"));
+						.catch((err) =>
+							toast.error(errorText(err), translate("settings.providers.submitFailed")),
+						);
 					useAppStore.getState().clearLoginInput();
 				}}
 				onCancel={() => {

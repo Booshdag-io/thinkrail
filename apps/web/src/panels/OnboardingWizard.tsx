@@ -7,10 +7,13 @@ import {
 	RiFileTextLine as FileText,
 	RiFolderOpenLine as FolderOpen,
 	RiGitBranchLine as GitBranch,
+	type RemixiconComponentType,
 	RiRocketLine as Rocket,
 	RiSparkling2Line as Sparkles,
 } from "@remixicon/react";
 import type { Project, ProviderStatus, WireModel } from "@thinkrail/contracts";
+import type { MessageKey } from "@thinkrail/locales";
+import { T, useT } from "@thinkrail/locales/react";
 import { Button } from "@thinkrail/ui/button";
 import { SkeletonRows } from "@thinkrail/ui/skeleton";
 import { cn } from "@thinkrail/ui/utils";
@@ -30,26 +33,30 @@ type Step = "intro" | "connect" | "verify" | "project" | "build";
 const INTRO_BEATS = [
 	{
 		icon: GitBranch,
-		title: "Worktrees, not your working tree",
-		detail: "Every task runs on its own branch, so main stays clean until you merge.",
+		title: "panels.onboarding.intro.worktreesTitle",
+		detail: "panels.onboarding.intro.worktreesDetail",
 	},
 	{
 		icon: FileText,
-		title: "Specs are the ground truth",
-		detail: "The agent reads and maintains your project's specs, so intent outlives the chat.",
+		title: "panels.onboarding.intro.specsTitle",
+		detail: "panels.onboarding.intro.specsDetail",
 	},
 	{
 		icon: Cpu,
-		title: "A thin host, a real engine",
-		detail: "The pi coding agent runs models and skills; ThinkRail gives it an IDE.",
+		title: "panels.onboarding.intro.engineTitle",
+		detail: "panels.onboarding.intro.engineDetail",
 	},
-];
+] as const satisfies readonly {
+	icon: RemixiconComponentType;
+	title: MessageKey;
+	detail: MessageKey;
+}[];
 
-const STEPS: { id: Exclude<Step, "intro">; label: string }[] = [
-	{ id: "connect", label: "Connect" },
-	{ id: "verify", label: "Verify" },
-	{ id: "project", label: "Project" },
-	{ id: "build", label: "Build" },
+const STEPS: { id: Exclude<Step, "intro">; label: MessageKey }[] = [
+	{ id: "connect", label: "panels.onboarding.step.connect" },
+	{ id: "verify", label: "panels.onboarding.step.verify" },
+	{ id: "project", label: "panels.onboarding.step.project" },
+	{ id: "build", label: "panels.onboarding.step.build" },
 ];
 
 export function OnboardingWizard({
@@ -57,6 +64,7 @@ export function OnboardingWizard({
 }: {
 	onFinish: (request: WorkspaceDialogRequest | null) => void;
 }) {
+	const t = useT();
 	const [step, setStep] = useState<Step>("intro");
 	const [provider, setProvider] = useState<ProviderStatus | null>(null);
 	const [project, setProject] = useState<Project | null>(null);
@@ -83,12 +91,14 @@ export function OnboardingWizard({
 					className="flex flex-col items-center gap-24 text-center"
 				>
 					<div className="flex flex-col items-center gap-8">
-						<span className="tr-text-eyebrow text-text-muted">Welcome to</span>
+						<span className="tr-text-eyebrow text-text-muted">
+							{t("panels.onboarding.intro.welcomeTo")}
+						</span>
 						<h1 data-testid="welcome-title" className="tr-brand-hero text-primary">
 							{PRODUCT_NAME}
 						</h1>
 						<p className="tr-heading-sm text-text-default">
-							The agentic IDE that gets better every time you use it.
+							{t("panels.onboarding.intro.tagline")}
 						</p>
 					</div>
 					<ul className="grid w-full gap-12 sm:grid-cols-3">
@@ -98,13 +108,13 @@ export function OnboardingWizard({
 								className="flex flex-col gap-8 rounded-sm border border-border-default bg-clip-padding bg-container-workspace-bg p-16 text-left"
 							>
 								<Icon className="size-16 text-primary" />
-								<span className="tr-title-card text-text-default">{title}</span>
-								<span className="text-text-muted tr-text-metadata">{detail}</span>
+								<span className="tr-title-card text-text-default">{t(title)}</span>
+								<span className="text-text-muted tr-text-metadata">{t(detail)}</span>
 							</li>
 						))}
 					</ul>
 					<Button data-testid="onboarding-start" onClick={() => setStep("connect")}>
-						Get started
+						{t("panels.onboarding.intro.start")}
 						<ArrowRight className="size-16" />
 					</Button>
 				</div>
@@ -112,8 +122,8 @@ export function OnboardingWizard({
 				<>
 					<StepTitle
 						step="connect"
-						title="Connect a model"
-						subtitle="Pick how the agent will run."
+						title={t("panels.onboarding.connect.title")}
+						subtitle={t("panels.onboarding.connect.subtitle")}
 					/>
 					<div className="w-full">
 						<ConnectProviderOptions
@@ -137,16 +147,16 @@ export function OnboardingWizard({
 				<>
 					<StepTitle
 						step="project"
-						title="Pick a project"
-						subtitle="Start from nothing or open a folder you have."
+						title={t("panels.onboarding.project.title")}
+						subtitle={t("panels.onboarding.project.subtitle")}
 					/>
 					<div className="flex flex-wrap justify-center gap-12">
 						<Card
 							cta
 							primary
 							icon={Sparkles}
-							title="Start a new project"
-							subtitle="Create an empty repo, then draft its spec with the agent."
+							title={t("panels.welcome.startNewTitle")}
+							subtitle={t("panels.welcome.startNewSubtitle")}
 							onClick={() => startNewProject({ offerSetup: false })}
 						/>
 						<AddProjectMenu
@@ -158,8 +168,8 @@ export function OnboardingWizard({
 						>
 							<Card
 								icon={FolderOpen}
-								title="Open a project"
-								subtitle="Pick a local folder or git repository on the host."
+								title={t("panels.onboarding.project.openTitle")}
+								subtitle={t("panels.onboarding.project.openSubtitle")}
 							/>
 						</AddProjectMenu>
 					</div>
@@ -168,23 +178,23 @@ export function OnboardingWizard({
 				<>
 					<StepTitle
 						step="build"
-						title={`${project.name} is ready`}
-						subtitle="Draft its specs with the agent first, or go straight to building."
+						title={t("panels.onboarding.build.title", { project: project.name })}
+						subtitle={t("panels.onboarding.build.subtitle")}
 					/>
 					<div className="flex flex-wrap justify-center gap-12">
 						<Card
 							cta
 							primary
 							icon={Sparkles}
-							title="Set up project"
-							tag="spec-first"
-							subtitle="Draft the project's specs with the agent before building, starting from its goal."
+							title={t("panels.welcome.setupTitle")}
+							tag={t("panels.welcome.setupTag")}
+							subtitle={t("panels.welcome.setupSubtitle")}
 							onClick={() => onFinish(setupDialogRequest(project.id))}
 						/>
 						<Card
 							icon={Rocket}
-							title="Start building"
-							subtitle="Cut an isolated worktree + branch and pair with the agent."
+							title={t("panels.welcome.startBuildingTitle")}
+							subtitle={t("panels.welcome.startBuildingSecondarySubtitle")}
 							onClick={() => onFinish({ projectId: project.id, prompt: "" })}
 						/>
 					</div>
@@ -198,7 +208,7 @@ export function OnboardingWizard({
 				className="text-text-muted"
 				onClick={() => onFinish(null)}
 			>
-				Skip setup
+				{t("panels.onboarding.skip")}
 			</Button>
 			{auth.loginDialog}
 			{dialogs}
@@ -207,6 +217,7 @@ export function OnboardingWizard({
 }
 
 function StepHeader({ current }: { current: Exclude<Step, "intro"> }) {
+	const t = useT();
 	const currentIndex = STEPS.findIndex((s) => s.id === current);
 	return (
 		<ol data-testid="onboarding-steps" className="flex items-center gap-8">
@@ -242,7 +253,7 @@ function StepHeader({ current }: { current: Exclude<Step, "intro"> }) {
 						<span
 							className={cn("tr-text-metadata", active ? "text-text-default" : "text-text-muted")}
 						>
-							{s.label}
+							{t(s.label)}
 						</span>
 					</li>
 				);
@@ -282,6 +293,7 @@ function VerifyStep({
 	onBack: () => void;
 	onContinue: () => void;
 }) {
+	const t = useT();
 	const [models, setModels] = useState<WireModel[] | null>(null);
 	const [defaultModel, setDefaultModel] = useState<WireModel | null>(null);
 	const [failed, setFailed] = useState(false);
@@ -310,17 +322,15 @@ function VerifyStep({
 		<>
 			<StepTitle
 				step="verify"
-				title={`${name} connected`}
-				subtitle="Here's what the agent can run on."
+				title={t("auth.login.connectedTitle", { provider: name })}
+				subtitle={t("panels.onboarding.verify.subtitle")}
 			/>
 			<div
 				data-testid="onboarding-verify"
 				className="flex w-full max-w-[420px] flex-col gap-8 rounded-sm border border-border-default bg-container-workspace-bg p-16 text-left"
 			>
 				{failed ? (
-					<p className="text-text-muted tr-text-ui">
-						Couldn't read the model list — the connection itself succeeded.
-					</p>
+					<p className="text-text-muted tr-text-ui">{t("panels.onboarding.verify.loadFailed")}</p>
 				) : models === null ? (
 					<SkeletonRows rows={2} />
 				) : empty ? (
@@ -329,8 +339,7 @@ function VerifyStep({
 						className="flex items-start gap-8 text-feedback-warning tr-text-ui"
 					>
 						<Alert className="mt-2 size-16 shrink-0" />
-						No models are available from {name} yet. Go back and pick another provider, or continue
-						and connect one later in Settings.
+						{t("panels.onboarding.verify.noModels", { provider: name })}
 					</p>
 				) : (
 					<>
@@ -339,12 +348,15 @@ function VerifyStep({
 							className="flex items-center gap-8 text-feedback-success tr-text-ui"
 						>
 							<Check className="size-16 shrink-0" />
-							{models.length} models available
+							{t("panels.connectProvider.modelsAvailable", { count: models.length })}
 						</p>
 						{defaultModel ? (
 							<p className="text-text-muted tr-text-metadata">
-								New chats start with{" "}
-								<span className="tr-text-emphasis text-text-default">{defaultModel.name}</span>.
+								<T
+									i18nKey="panels.onboarding.verify.defaultModel"
+									values={{ model: defaultModel.name }}
+									components={[<span key="model" className="tr-text-emphasis text-text-default" />]}
+								/>
 							</p>
 						) : null}
 					</>
@@ -353,10 +365,10 @@ function VerifyStep({
 			<div className="flex gap-8">
 				<Button variant="outline" data-testid="onboarding-back" onClick={onBack}>
 					<ArrowLeft className="size-16" />
-					Back
+					{t("common.back")}
 				</Button>
 				<Button data-testid="onboarding-continue" onClick={onContinue}>
-					Continue
+					{t("panels.onboarding.continue")}
 				</Button>
 			</div>
 		</>

@@ -1,12 +1,14 @@
 import type { RemixiconComponentType as LucideIcon } from "@remixicon/react";
+import { useT } from "@thinkrail/locales/react";
 import { cn } from "@thinkrail/ui/utils";
 import { type ComponentPropsWithoutRef, forwardRef } from "react";
 
 export function CardSkeleton() {
+	const t = useT();
 	return (
 		<div
 			role="status"
-			aria-label="Loading"
+			aria-label={t("panels.welcome.loading")}
 			aria-busy="true"
 			className="flex h-[150px] w-[220px] flex-col items-start justify-between rounded-sm border border-border-default bg-container-workspace-bg p-16"
 		>

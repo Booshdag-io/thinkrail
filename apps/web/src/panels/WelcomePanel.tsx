@@ -115,8 +115,8 @@ export function WelcomePanel() {
 				cta={primary}
 				primary={primary}
 				icon={FolderOpen}
-				title="Open project"
-				subtitle="Choose a local folder or git repository to work in."
+				title={t("panels.welcome.openProjectTitle")}
+				subtitle={t("panels.welcome.openProjectSubtitle")}
 			/>
 		</AddProjectMenu>
 	);
@@ -128,8 +128,8 @@ export function WelcomePanel() {
 					cta
 					primary
 					icon={Sparkles}
-					title="Start a new project"
-					subtitle="Create an empty repo, then draft its spec with the agent."
+					title={t("panels.welcome.startNewTitle")}
+					subtitle={t("panels.welcome.startNewSubtitle")}
 					onClick={() => startNewProject({ offerSetup: true })}
 				/>
 				{openProjectCard(false)}
@@ -151,11 +151,15 @@ export function WelcomePanel() {
 						data-testid="welcome-title"
 						className="tr-brand-hero max-w-[640px] break-words text-primary"
 					>
-						{project ? project.name : justConnected ? "You're set" : PRODUCT_NAME}
+						{project
+							? project.name
+							: justConnected
+								? t("panels.welcome.connectedTitle")
+								: PRODUCT_NAME}
 					</h1>
 					{noProjects && justConnected ? (
 						<p data-testid="welcome-subtitle" className="mt-8 tr-text-reading text-text-muted">
-							Pick a path to start — the connect step is out of the way.
+							{t("panels.welcome.connectedSubtitle")}
 						</p>
 					) : null}
 
@@ -181,8 +185,8 @@ export function WelcomePanel() {
 									cta
 									primary
 									icon={Rocket}
-									title="Start building"
-									subtitle="Cut an isolated worktree + branch, then pair with the agent to build it."
+									title={t("panels.welcome.startBuildingTitle")}
+									subtitle={t("panels.welcome.startBuildingSubtitle")}
 									onClick={() => setDialog({ projectId: project.id, prompt: "" })}
 									className="motion-safe:animate-reveal"
 								/>
@@ -194,16 +198,16 @@ export function WelcomePanel() {
 									cta
 									primary
 									icon={Sparkles}
-									title="Set up project"
-									tag="spec-first"
-									subtitle="Draft the project's specs with the agent before building, starting from its goal."
+									title={t("panels.welcome.setupTitle")}
+									tag={t("panels.welcome.setupTag")}
+									subtitle={t("panels.welcome.setupSubtitle")}
 									onClick={() => setDialog(setupDialogRequest(project.id))}
 									className="motion-safe:animate-reveal"
 								/>
 								<Card
 									icon={Rocket}
-									title="Start building"
-									subtitle="Cut an isolated worktree + branch and pair with the agent."
+									title={t("panels.welcome.startBuildingTitle")}
+									subtitle={t("panels.welcome.startBuildingSecondarySubtitle")}
 									onClick={() => setDialog({ projectId: project.id, prompt: "" })}
 									className="motion-safe:animate-reveal"
 								/>

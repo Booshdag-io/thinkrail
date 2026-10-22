@@ -5,6 +5,8 @@ import {
 	RiSearchLine as Search,
 } from "@remixicon/react";
 import type { ProviderStatus } from "@thinkrail/contracts";
+import type { MessageKey } from "@thinkrail/locales";
+import { t as translate, useT } from "@thinkrail/locales/react";
 import { Button } from "@thinkrail/ui/button";
 import { SkeletonRows } from "@thinkrail/ui/skeleton";
 import { cn } from "@thinkrail/ui/utils";
@@ -20,10 +22,16 @@ const JETBRAINS_AI_SEARCH = "jetbrains ai central";
 
 type Method = "oauth" | "api_key";
 
-const RECOMMENDED_COPY: Record<Method, { title: string; detail: string }> = {
-	oauth: { title: "Claude Pro or Max", detail: "Sign in with your Claude subscription." },
-	api_key: { title: "API key", detail: "Paste a key from the Anthropic Console." },
-};
+const RECOMMENDED_COPY = {
+	oauth: {
+		title: "panels.connectProvider.anthropicOauthTitle",
+		detail: "panels.connectProvider.anthropicOauthDetail",
+	},
+	api_key: {
+		title: "panels.connectProvider.anthropicApiKeyTitle",
+		detail: "panels.connectProvider.anthropicApiKeyDetail",
+	},
+} as const satisfies Record<Method, { title: MessageKey; detail: MessageKey }>;
 
 function methodsOf(provider: ProviderStatus): Method[] {
 	return [
@@ -41,8 +49,10 @@ export async function announceProviderConnected(provider: ProviderStatus): Promi
 		.request("model.list", {})
 		.catch(() => null);
 	toast.success(
-		models ? `${models.length} models available` : "The agent can run now.",
-		`${connectedProviderName(provider)} connected`,
+		models
+			? translate("panels.connectProvider.modelsAvailable", { count: models.length })
+			: translate("panels.connectProvider.agentCanRun"),
+		translate("auth.login.connectedTitle", { provider: connectedProviderName(provider) }),
 	);
 }
 
@@ -55,6 +65,7 @@ export function ConnectProviderOptions({
 	onShowAll: () => void;
 	onConnected: (provider: ProviderStatus) => void;
 }) {
+	const t = useT();
 	const { report, failed, load, startLogin, rowBusy } = auth;
 	const [search, setSearch] = useState("");
 	const baseline = useRef<Set<string> | null>(null);
@@ -77,10 +88,10 @@ export function ConnectProviderOptions({
 		return (
 			<div data-testid="connect-provider-error" className="flex items-center gap-12">
 				<p className="min-w-0 flex-1 text-text-muted tr-text-ui">
-					Couldn't read the provider status from the host.
+					{t("panels.connectProvider.loadFailed")}
 				</p>
 				<Button variant="outline" size="sm" onClick={() => void load()}>
-					Retry
+					{t("common.retry")}
 				</Button>
 			</div>
 		);
@@ -108,7 +119,7 @@ export function ConnectProviderOptions({
 					className="flex flex-col gap-8 rounded-sm border border-primary-muted bg-clip-padding bg-primary-subtle p-16"
 				>
 					<span className="self-start rounded-full border border-primary-muted bg-clip-padding bg-primary-subtle px-8 py-2 tr-text-label-pill text-primary">
-						Recommended
+						{t("panels.connectProvider.recommended")}
 					</span>
 					<span className="tr-title-card text-text-default">{recommended.name}</span>
 					<MethodChoices
@@ -129,8 +140,12 @@ export function ConnectProviderOptions({
 						type="text"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						placeholder={recommended ? "Search other providers…" : "Search providers…"}
-						aria-label="Search providers"
+						placeholder={
+							recommended
+								? t("panels.connectProvider.searchOthers")
+								: t("panels.connectProvider.search")
+						}
+						aria-label={t("panels.connectProvider.searchLabel")}
 						data-testid="connect-provider-search"
 						className="h-32 w-full rounded-sm border border-control-border-default bg-control-bg pl-24 pr-8 tr-text-ui text-text-default placeholder:text-text-muted outline-none transition-colors focus:border-control-border-active"
 					/>
@@ -156,7 +171,7 @@ export function ConnectProviderOptions({
 					))}
 					{!showJetBrains && others.length === 0 ? (
 						<p className="py-16 text-center text-text-muted tr-text-metadata">
-							No providers match your search.
+							{t("panels.connectProvider.noMatch")}
 						</p>
 					) : null}
 				</div>
@@ -169,7 +184,7 @@ export function ConnectProviderOptions({
 				className="self-center text-primary"
 				onClick={onShowAll}
 			>
-				See all providers & advanced settings
+				{t("panels.connectProvider.showAll")}
 				<ArrowRight className="size-14" />
 			</Button>
 		</div>
@@ -185,6 +200,7 @@ function MethodChoices({
 	busy: boolean;
 	onPick: (method: Method) => void;
 }) {
+	const t = useT();
 	return (
 		<div className="grid gap-8 sm:grid-cols-2">
 			{methodsOf(provider).map((method) => {
@@ -208,10 +224,10 @@ function MethodChoices({
 						<Icon className="mt-2 size-16 shrink-0 text-primary" />
 						<span className="min-w-0">
 							<span className="block tr-title-card text-text-default">
-								{RECOMMENDED_COPY[method].title}
+								{t(RECOMMENDED_COPY[method].title)}
 							</span>
 							<span className="mt-2 block text-text-muted tr-text-metadata">
-								{RECOMMENDED_COPY[method].detail}
+								{t(RECOMMENDED_COPY[method].detail)}
 							</span>
 						</span>
 					</button>

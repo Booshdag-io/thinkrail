@@ -372,7 +372,7 @@ default, narrow cross-ring guards, and the quit-confirmation rule both clients d
   fileLineWidthBounded, customLayoutPresets, defaultModel?, defaultEffort?, reviewModel?, reviewEffort?,
   favoriteModels, recentModels, reviewAutoFix, agentReviewEnabled, subagentsEnabled, subagentMaxConcurrent,
   jbcentralQuotaEnabled, jbcentralQuotaRefreshSeconds, disabledExtensions, onboardingDismissed }` — an extensible bag; the line-width fields join
-  the wire at protocol v61 and `terminalWindowsShell` at v62. `onboardingDismissed` (v89, default `false`)
+  the wire at protocol v61 and `terminalWindowsShell` at v62. `onboardingDismissed` (v91, default `false`)
   records that the user finished or skipped the cold-start onboarding wizard, so it never returns. **`DEFAULT_MODEL_PROTOCOL_VERSION`** pins
   v72's AppConfig `defaultModel`/`defaultEffort` and host-side default resolution; the Settings controls are
   hidden against older hosts. `defaultModel` is a full allowlisted `WireModel`, `defaultEffort` is an optional
@@ -552,7 +552,7 @@ default, narrow cross-ring guards, and the quit-confirmation rule both clients d
   an older host), **`project.inspect`** (classify a path) + **`project.init`**
   (`git init` + commit, then open) + **`project.create`** (`{ parentPath, name }` → the opened `Project`:
   make the folder `name` under `parentPath`, creating missing parents, then the same bootstrap as init;
-  `ONBOARDING_PROTOCOL_VERSION` pins its v89 introduction together with `AppConfig.onboardingDismissed`)
+  `ONBOARDING_PROTOCOL_VERSION` pins its v91 introduction together with `AppConfig.onboardingDismissed`)
   + **`project.hasSpecs`** (lazy per-project "contains a registered
   spec?" for the Welcome screen — a full-tree walk, so requested only for the shown project,
   never eagerly for every project) / `workspace.*` — notably **`workspace.list { projectId,

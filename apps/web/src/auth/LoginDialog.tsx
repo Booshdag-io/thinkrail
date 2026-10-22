@@ -212,7 +212,7 @@ export function LoginDialog({
 								) : null}
 								<div className="grid gap-8 sm:grid-cols-2">
 									{state.input.options.map((option) => {
-										const { title, detail, recommended } = loginOptionParts(option.label);
+										const { title, detail, recommended } = loginOptionParts(option.label, t);
 										return (
 											<button
 												key={option.id}

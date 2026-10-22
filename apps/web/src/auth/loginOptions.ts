@@ -1,13 +1,19 @@
-const NOTE_COPY: Record<string, string> = {
-	default: "Recommended",
-	headless: "If the browser can't reach this computer — paste a code instead.",
+import type { MessageKey } from "@thinkrail/locales";
+import type { Translator } from "@thinkrail/locales/react";
+
+const NOTE_COPY: Record<string, MessageKey> = {
+	default: "auth.login.optionRecommended",
+	headless: "auth.login.optionHeadless",
 };
 
 export function loginSelectMessage(message: string): string {
 	return message.trim().replace(/:$/, "");
 }
 
-export function loginOptionParts(label: string): {
+export function loginOptionParts(
+	label: string,
+	t: Translator,
+): {
 	title: string;
 	detail?: string;
 	recommended: boolean;
@@ -18,7 +24,7 @@ export function loginOptionParts(label: string): {
 	const known = NOTE_COPY[note.toLowerCase()];
 	return {
 		title: match[1],
-		detail: known ?? note.charAt(0).toUpperCase() + note.slice(1),
+		detail: known ? t(known) : note.charAt(0).toUpperCase() + note.slice(1),
 		recommended: note.toLowerCase() === "default",
 	};
 }

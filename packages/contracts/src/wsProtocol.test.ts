@@ -218,7 +218,7 @@ test("local language files and the locale setting are pinned to v89", () => {
 });
 
 test("client error reports are pinned to v90", () => {
-	expect(PROTOCOL_VERSION).toBe(90);
+	expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(CLIENT_ERROR_REPORT_PROTOCOL_VERSION);
 	expect(CLIENT_ERROR_REPORT_PROTOCOL_VERSION).toBe(90);
 	expect(WS_METHODS.clientReportError).toBe("client.reportError");
 });
@@ -247,9 +247,9 @@ test("review details and the GitHub review actions are pinned to v88", () => {
 	expect(WS_METHODS.workspaceDeleteRemoteBranch).toBe("workspace.deleteRemoteBranch");
 });
 
-test("project create and the onboarding dismissal are pinned to v89", () => {
-	expect(PROTOCOL_VERSION).toBe(89);
-	expect(ONBOARDING_PROTOCOL_VERSION).toBe(89);
+test("project create and the onboarding dismissal are pinned to v91", () => {
+	expect(PROTOCOL_VERSION).toBe(91);
+	expect(ONBOARDING_PROTOCOL_VERSION).toBe(91);
 	expect(WS_METHODS.projectCreate).toBe("project.create");
 	expect(DEFAULT_CONFIG.onboardingDismissed).toBe(false);
 });

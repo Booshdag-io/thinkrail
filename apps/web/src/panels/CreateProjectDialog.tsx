@@ -1,5 +1,6 @@
 import { RiAlertLine as Alert, RiFolderOpenLine as FolderOpen } from "@remixicon/react";
 import type { Project } from "@thinkrail/contracts";
+import { t as translate, useT } from "@thinkrail/locales/react";
 import { Button } from "@thinkrail/ui/button";
 import {
 	Dialog,
@@ -41,6 +42,7 @@ export function CreateProjectDialog({
 	onClose: () => void;
 	onCreated: (project: Project, setup: boolean) => void;
 }) {
+	const t = useT();
 	const [name, setName] = useState("");
 	const [parent, setParent] = useState(DEFAULT_PROJECT_PARENT);
 	const [setup, setSetup] = useState(true);
@@ -60,9 +62,7 @@ export function CreateProjectDialog({
 			);
 			if (path) setParent(path);
 		} catch (err) {
-			setError(
-				errorText(err, "Couldn't open the folder picker on the host — type the path instead."),
-			);
+			setError(errorText(err, translate("panels.createProject.pickFailed")));
 		}
 	};
 
@@ -80,7 +80,7 @@ export function CreateProjectDialog({
 			onClose();
 		} catch (err) {
 			setBusy(false);
-			setError(errorText(err, "Couldn't create the project."));
+			setError(errorText(err, translate("panels.createProject.createFailed")));
 		}
 	};
 
@@ -93,10 +93,8 @@ export function CreateProjectDialog({
 		>
 			<DialogContent data-testid="create-project-dialog" className="max-w-[32rem] gap-12">
 				<DialogHeader>
-					<DialogTitle>Start a new project</DialogTitle>
-					<DialogDescription>
-						ThinkRail makes the folder on the computer running it and starts a git repository there.
-					</DialogDescription>
+					<DialogTitle>{t("panels.createProject.title")}</DialogTitle>
+					<DialogDescription>{t("panels.createProject.description")}</DialogDescription>
 				</DialogHeader>
 
 				<form
@@ -107,7 +105,9 @@ export function CreateProjectDialog({
 					}}
 				>
 					<label htmlFor="create-project-name" className="flex flex-col gap-4">
-						<span className="tr-title-compact text-text-default">Name</span>
+						<span className="tr-title-compact text-text-default">
+							{t("panels.createProject.name")}
+						</span>
 						<input
 							id="create-project-name"
 							data-testid="create-project-name"
@@ -116,14 +116,14 @@ export function CreateProjectDialog({
 							spellCheck={false}
 							value={name}
 							onChange={(event) => setName(event.target.value)}
-							placeholder="weather app"
+							placeholder={t("panels.createProject.namePlaceholder")}
 							className={FIELD_CLASS}
 						/>
 					</label>
 
 					<div className="flex flex-col gap-4">
 						<label htmlFor="create-project-parent" className="tr-title-compact text-text-default">
-							Location
+							{t("panels.createProject.location")}
 						</label>
 						<div className="flex gap-8">
 							<input
@@ -141,14 +141,14 @@ export function CreateProjectDialog({
 								onClick={() => void browse()}
 							>
 								<FolderOpen className="size-16" />
-								Browse
+								{t("panels.createProject.browse")}
 							</Button>
 						</div>
 						<span
 							data-testid="create-project-path"
 							className="truncate text-text-muted tr-text-metadata"
 						>
-							{folder ? joinHostPath(parentPath, folder) : "Name the project to see its folder."}
+							{folder ? joinHostPath(parentPath, folder) : t("panels.createProject.pathHint")}
 						</span>
 					</div>
 
@@ -156,16 +156,16 @@ export function CreateProjectDialog({
 						<div className="flex items-center gap-12">
 							<span className="min-w-0 flex-1">
 								<span className="block tr-title-compact text-text-default">
-									Draft the specs with the agent
+									{t("panels.createProject.setupTitle")}
 								</span>
 								<span className="block text-text-muted tr-text-metadata">
-									Opens a chat that runs the Set up project skill, starting from the project's goal.
+									{t("panels.createProject.setupDetail")}
 								</span>
 							</span>
 							<Switch
 								checked={setup}
 								onCheckedChange={setSetup}
-								label="Draft the specs with the agent"
+								label={t("panels.createProject.setupTitle")}
 								testId="create-project-setup"
 							/>
 						</div>
@@ -183,10 +183,10 @@ export function CreateProjectDialog({
 
 					<DialogFooter>
 						<Button variant="outline" disabled={busy} onClick={onClose}>
-							Cancel
+							{t("common.cancel")}
 						</Button>
 						<Button type="submit" data-testid="create-project-submit" disabled={!canCreate}>
-							{busy ? "Creating…" : "Create & open"}
+							{busy ? t("panels.createProject.creating") : t("panels.createProject.create")}
 						</Button>
 					</DialogFooter>
 				</form>

@@ -1,4 +1,5 @@
 import type { ProviderStatus } from "@thinkrail/contracts";
+import { useT } from "@thinkrail/locales/react";
 import {
 	Dialog,
 	DialogContent,
@@ -29,6 +30,7 @@ export function ConnectProviderDialog({
 	onClose: () => void;
 	onConnected?: (provider: ProviderStatus) => void;
 }) {
+	const t = useT();
 	const settingsOpen = useAppStore((s) => s.settingsOpen);
 	const auth = useProviderAuth({ ownsLoginDialog: !settingsOpen });
 
@@ -47,11 +49,8 @@ export function ConnectProviderDialog({
 					className="max-h-[85vh] max-w-[36rem] gap-16 overflow-y-auto"
 				>
 					<DialogHeader>
-						<DialogTitle>Pick how the agent will run</DialogTitle>
-						<DialogDescription>
-							The agent needs a model provider. Start with one of these — every provider is in
-							Settings.
-						</DialogDescription>
+						<DialogTitle>{t("panels.connectProvider.title")}</DialogTitle>
+						<DialogDescription>{t("panels.connectProvider.description")}</DialogDescription>
 					</DialogHeader>
 					<ConnectProviderOptions
 						auth={auth}

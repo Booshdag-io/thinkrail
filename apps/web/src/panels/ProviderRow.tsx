@@ -1,5 +1,6 @@
 import { RiKeyLine as KeyRound, RiLoginBoxLine as LogIn } from "@remixicon/react";
 import type { ProviderStatus } from "@thinkrail/contracts";
+import { useT } from "@thinkrail/locales/react";
 import { Button } from "@thinkrail/ui/button";
 
 export function ProviderRow({
@@ -13,6 +14,7 @@ export function ProviderRow({
 	onSignIn: () => void;
 	onApiKey: () => void;
 }) {
+	const t = useT();
 	return (
 		<div
 			data-testid="provider-signin-row"
@@ -32,7 +34,7 @@ export function ProviderRow({
 						onClick={onSignIn}
 					>
 						<LogIn className="size-14" />
-						Sign in
+						{t("settings.providers.signIn")}
 					</Button>
 				)}
 				{provider.canApiKey && (
@@ -45,7 +47,7 @@ export function ProviderRow({
 						onClick={onApiKey}
 					>
 						<KeyRound className="size-14" />
-						API key
+						{t("settings.providers.apiKey")}
 					</Button>
 				)}
 			</div>

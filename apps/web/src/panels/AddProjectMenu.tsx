@@ -43,7 +43,7 @@ export function AddProjectMenu({
 					<>
 						<DropdownMenuItem data-testid="menu-start-new-project" onSelect={() => onStartNew()}>
 							<Sparkles />
-							<span>Start a new project…</span>
+							<span>{t("panels.addProject.startNew")}</span>
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 					</>

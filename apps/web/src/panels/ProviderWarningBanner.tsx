@@ -1,5 +1,6 @@
 import { RiAlertLine as TriangleAlert } from "@remixicon/react";
 import type { ProviderStatus } from "@thinkrail/contracts";
+import { useT } from "@thinkrail/locales/react";
 import { Button } from "@thinkrail/ui/button";
 import { useState } from "react";
 import { ConnectProviderDialog } from "./ConnectProviderDialog";
@@ -10,6 +11,7 @@ export function ProviderWarningBanner({
 }: {
 	onConnected?: (provider: ProviderStatus) => void;
 }) {
+	const t = useT();
 	const hasProvider = useHasProvider();
 	const [connecting, setConnecting] = useState(false);
 
@@ -22,7 +24,7 @@ export function ProviderWarningBanner({
 				>
 					<TriangleAlert className="size-16 shrink-0 text-feedback-warning" />
 					<span className="min-w-0 flex-1 tr-text-reading text-text-default">
-						No model provider connected — the agent can't run.
+						{t("panels.providerWarning.message")}
 					</span>
 					<Button
 						size="sm"
@@ -30,7 +32,7 @@ export function ProviderWarningBanner({
 						onClick={() => setConnecting(true)}
 						className="shrink-0"
 					>
-						Connect a provider
+						{t("panels.providerWarning.connect")}
 					</Button>
 				</div>
 			) : null}

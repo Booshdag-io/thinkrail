@@ -42,7 +42,9 @@ not here — `auth` stays presentational + types, so nothing here imports `store
     terminal success/error) and calls back `onReply(value)` / `onCancel()` / `onClose()`. Copy says
     **"Connect"**, not "Sign in" — one dialog serves OAuth and API-key entry alike. Themed with token
     utilities only; `@remixicon/react` icons; shadcn `Dialog`/`Button`.
-  - `loginOptions` — `loginSelectMessage` / `loginOptionParts` / `loginPromptMessage`: the pure presentation split above.
+  - `loginOptions` — `loginSelectMessage` / `loginOptionParts` / `loginPromptMessage`: the pure presentation split above;
+    `loginOptionParts` takes the caller's translator for the notes it rewrites, while pi's own labels and messages pass
+    through in pi's language.
   - `uiOrigin` — `isLoopbackHost` / `uiServedFromLoopback`: whether the UI was opened via a loopback host,
     the dialog's proxy for "the browser runs on the ThinkRail host machine"; `redirectsToLoopback`:
     whether an authorize URL's `redirect_uri` / `callback_url` is an `http:` loopback address.
