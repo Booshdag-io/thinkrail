@@ -59,12 +59,13 @@ skipping plan files whose session has no transcript on disk (orphans).
 - **Files:** `git ls-files -co --exclude-standard -z` streamed through `gitAsyncStream` and a capped
   NUL parser (`FILE_LIST_LIMITS`: 100k names / 16 MB, then `truncated`), a bounded `readdir` walk for a
   non-git root; `node_modules` and VCS directories are always hidden. Lists are cached per root with a
-  lower-cased twin (at most `maxRoots` roots, least recently asked first out) and revalidated
+  lower-cased twin (at most `maxRoots` roots — or as many as one query spans — least recently asked
+  first out; a list cut at its cap is still searched and its group reported `truncated`) and revalidated
   stale-while-reloading after a TTL or on `workspace.fsChanged` (`invalidateRoot`) — the old list keeps
   answering until the reload lands, so a change never blanks the active workspace's files. Matching is
-  two-pass: a substring prefilter over every term, then — only when that cannot fill the page — the
-  matcher's subsequence tier over the rest, gated by a cheap subsequence test. 100k paths answer in
-  tens of milliseconds.
+  two-pass: a substring prefilter over every term runs the matcher on the plain hits first, then every
+  remaining path that passes a cheap subsequence test goes through the matcher too (acronym, camel-hump
+  and subsequence tiers), both passes bounded by the deadline. 100k paths answer in tens of milliseconds.
 - **Specs:** the `spec` module's per-root snapshot — built synchronously only on a root's first read,
   afterwards rebuilt off the request path (`setImmediate`) when its TTL lapses or the worktree changes,
   the previous snapshot answering meanwhile (title / id / path through the matcher; a body match from
@@ -81,8 +82,9 @@ skipping plan files whose session has no transcript on disk (orphans).
 
 `search.preview` reads bounded content without side effects: a chat preview is a window of
 `previewMessages` entries around the focused message from the history index (never a pi session); a
-file preview is the first `previewBytes` of a root-contained file (`resolveContainedFile`), refused as
-`binary` when `resourceMeta` says so; a spec preview is the cached body; a plan preview renders the
+file preview is the first `previewBytes` of a root-contained file (`resolveContainedFile`), trimmed of a
+multi-byte sequence the cut split so the text test stays honest, refused as `binary` when `resourceMeta`
+says so; a spec preview is the cached body; a plan preview renders the
 stored plan as a checklist. Anything unresolvable answers `unavailable`.
 
 ## Get right
