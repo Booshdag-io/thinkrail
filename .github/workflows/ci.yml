@@ -223,11 +223,16 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
+      - id: image
+        run: echo "version=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
+      - name: Cache desktop apt packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/desktop-apt
+          key: desktop-apt-${{ steps.image.outputs.version }}-${{ hashFiles('.github/scripts/install-desktop-deps.sh') }}
       - name: Install desktop and browser runtimes
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            dbus-x11 x11-utils xvfb libgtk-3-0 libwebkit2gtk-4.1-0 libayatana-appindicator3-1 librsvg2-2
+          .github/scripts/install-desktop-deps.sh ~/.cache/desktop-apt
           .github/scripts/install-playwright.sh
       - name: Start virtual display
         run: |
