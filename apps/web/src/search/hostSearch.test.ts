@@ -122,6 +122,32 @@ describe("host search controller", () => {
 		expect(h.timers.filter((timer) => !timer.cancelled)).toHaveLength(0);
 	});
 
+	test("a value-equal update never disturbs a pending debounce or poll, and dispose is not permanent", async () => {
+		const h = harness();
+		h.controller.update(input("re"));
+		h.controller.update({ ...input("re") });
+		h.fire();
+		expect(h.requests.map((request) => request.params.query)).toEqual(["re"]);
+		h.requests[0]?.resolve({ seq: h.requests[0].params.seq, groups: [group("indexing", [])] });
+		await h.settle();
+		expect(h.emitted.at(-1)?.pending).toBe(true);
+		h.controller.update({ ...input("re") });
+		h.fire();
+		expect(h.requests).toHaveLength(2);
+
+		h.controller.dispose();
+		expect(h.emitted.at(-1)).toEqual({ groups: null, pending: false });
+		h.controller.update(input("again"));
+		h.fire();
+		h.requests[1]?.resolve({ seq: h.requests[1].params.seq, groups: [group()] });
+		await h.settle();
+		expect(h.emitted.at(-1)).toEqual({ groups: null, pending: true });
+		expect(h.requests).toHaveLength(3);
+		h.requests[2]?.resolve({ seq: h.requests[2].params.seq, groups: [group()] });
+		await h.settle();
+		expect(h.emitted.at(-1)).toEqual({ groups: [group()], pending: false });
+	});
+
 	test("an indexing group polls until it is ready, a reconnect re-asks, an inactive input clears", async () => {
 		const h = harness();
 		h.controller.update(input("spec"));

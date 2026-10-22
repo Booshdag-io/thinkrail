@@ -185,11 +185,3 @@ export function hostItems(context: HostItemContext, groups: readonly SearchGroup
 	}
 	return items;
 }
-
-export function hostGroupStates(
-	groups: readonly SearchGroup[],
-): Record<string, SearchGroup["state"]> {
-	const states: Record<string, SearchGroup["state"]> = {};
-	for (const group of groups) states[group.kind] = group.state;
-	return states;
-}

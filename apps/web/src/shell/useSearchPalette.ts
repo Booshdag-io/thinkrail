@@ -99,6 +99,7 @@ async function openHostHit(hit: SearchHit): Promise<void> {
 	const store = useAppStore.getState();
 	switch (hit.kind) {
 		case "file":
+			navigateToWorkspace(workspace);
 			if (hit.path) await openFileInTab(workspace.id, hit.path, "keep");
 			return;
 		case "spec":

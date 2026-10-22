@@ -5,14 +5,7 @@ import { makeSnippet, matchesTerms } from "../history";
 import type { SpecSnapshotEntry } from "../spec";
 import type { StoredPlanFile } from "../todos";
 import type { FileListCache, IndexedFileList } from "./files";
-import {
-	buildGroup,
-	compactWhitespace,
-	type Deadline,
-	emptyGroup,
-	lineSnippet,
-	termRanges,
-} from "./hits";
+import { buildGroup, compactWhitespace, type Deadline, lineSnippet, termRanges } from "./hits";
 
 export interface SearchRoot {
 	readonly root: string;
@@ -121,8 +114,12 @@ export function searchFiles(
 			if (match) pushHit(root, path, match);
 		}
 	}
-	const group = buildGroup("file", hits, input.limit, truncated ? "truncated" : "ready");
-	return indexing && hits.length === 0 ? { ...group, state: "indexing" } : group;
+	return buildGroup(
+		"file",
+		hits,
+		input.limit,
+		indexing ? "indexing" : truncated ? "truncated" : "ready",
+	);
 }
 
 export function searchSpecs(
@@ -321,5 +318,3 @@ export function searchWorkspaces(
 	}
 	return buildGroup("workspace", hits, input.limit);
 }
-
-export { emptyGroup };

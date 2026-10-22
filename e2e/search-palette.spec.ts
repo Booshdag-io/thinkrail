@@ -317,6 +317,25 @@ test("host search: a file by name opens as a tab, a spec by body opens in the Sp
 	).toBeVisible();
 });
 
+test("host search: from Project Home a file hit enters the project's workspace before opening the tab", async ({
+	page,
+}) => {
+	await openFixtureProject(page);
+	await expect(defaultWorkspaceRow(page)).not.toHaveAttribute("data-active", "true");
+	await openPalette(page);
+	await page.getByTestId("search-input").fill("/notes");
+	const file = page.locator('[data-testid="search-row"][data-kind="file"]', {
+		hasText: "notes.txt",
+	});
+	await expect(file).toBeVisible({ timeout: 15_000 });
+	await page.keyboard.press("Enter");
+	await expect(palette(page)).toBeHidden();
+	await expect(defaultWorkspaceRow(page)).toHaveAttribute("data-active", "true");
+	await expect(
+		page.locator('[data-testid="editor-tab"][data-kind="file"]', { hasText: "notes.txt" }),
+	).toBeVisible();
+});
+
 test("host search: a transcript hit jumps to its message and the preview shows the window around it", async ({
 	page,
 }) => {

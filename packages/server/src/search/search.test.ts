@@ -313,6 +313,73 @@ describe("search.query", () => {
 		expect(loads).toBe(3);
 	});
 
+	test("a root invalidated after a change keeps answering while it reloads, and a cold root marks the group indexing even with hits", async () => {
+		let loads = 0;
+		const files = new FileListCache(async (root) => {
+			loads += 1;
+			return lists[root] ?? { paths: [], truncated: false };
+		});
+		await files.load("/repos/one-auth");
+		const service = createSearchService(readers({ files }));
+		const partial = await service.query("c1", {
+			seq: 1,
+			query: "refresh",
+			kinds: ["file"],
+			context,
+		});
+		expect(partial.groups[0]).toMatchObject({ kind: "file", state: "indexing" });
+		expect(partial.groups[0]?.hits.map((hit) => hit.id)).toEqual([
+			"file:p1:w-feature:src/auth/refresh.ts",
+		]);
+		await Bun.sleep(0);
+		expect(loads).toBe(3);
+
+		service.invalidateRoot("/repos/one-auth");
+		const stale = await service.query("c1", { seq: 2, query: "refresh", kinds: ["file"], context });
+		expect(stale.groups[0]?.state).toBe("ready");
+		expect(stale.groups[0]?.hits).toHaveLength(3);
+		await Bun.sleep(0);
+		expect(loads).toBe(4);
+	});
+
+	test("the file-list cache keeps a bounded number of roots", async () => {
+		const files = new FileListCache(async () => ({ paths: ["a.ts"], truncated: false }));
+		for (let index = 0; index < 10; index += 1) await files.load(`/root-${index}`);
+		expect(files.peek("/root-0")).toBeNull();
+		expect(files.peek("/root-9")).not.toBeNull();
+	});
+
+	test("a provider that runs out of its budget answers what it has as truncated", async () => {
+		const many: FileList = {
+			paths: Array.from({ length: 5_000 }, (_, index) => `src/refresh-${index}.ts`),
+			truncated: false,
+		};
+		const files = new FileListCache(async () => many);
+		await files.load("/repos/one-auth");
+		let tick = 0;
+		const service = createSearchService(
+			readers({
+				files,
+				projects: () => [{ ...project, path: "/repos/one-auth" }],
+				workspaces: () => [feature],
+				now: () => {
+					tick += 1;
+					return tick <= 2 ? 0 : 10_000;
+				},
+			}),
+		);
+		const result = await service.query("c1", {
+			seq: 1,
+			query: "refresh",
+			kinds: ["file"],
+			context,
+		});
+		const file = result.groups[0];
+		expect(file?.state).toBe("truncated");
+		expect(file?.total).toBeGreaterThan(0);
+		expect(file?.total).toBeLessThan(5_000);
+	});
+
 	test("an older seq from the same client is superseded, also when a newer one arrived mid-flight", async () => {
 		const gate = Promise.withResolvers<void>();
 		const service = createSearchService(

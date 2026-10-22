@@ -22,6 +22,7 @@ import {
 	type ReactNode,
 	useEffect,
 	useInsertionEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
@@ -31,7 +32,7 @@ import { AttentionDot } from "../components/AttentionDot";
 import { RunningIcon } from "../components/RunningIcon";
 import { hasPlatformModifier } from "../lib";
 import { hostItems } from "./hostItems";
-import { loadHostPreview, useHostSearch } from "./hostSearch";
+import { createHostPreviewLoader, type HostPreviewLoader, useHostSearch } from "./hostSearch";
 import { recordPick } from "./learning";
 import type { PaletteAction, PaletteItem, PaletteRow, PaletteSection } from "./model";
 import { readLearning, readPreviewOpen, writeLearning, writePreviewOpen } from "./preferences";
@@ -137,19 +138,25 @@ function PaletteBody({
 		const result = parseSearchQuery(query);
 		return scopes.includes(result.scope) ? result : parseSearchQuery(stripScopePrefix(query));
 	}, [query, scopes]);
-	const hostContext = host?.context;
+	const hostEnabled = host !== undefined && page === null;
+	const hostProjectId = host?.context.projectId;
+	const hostWorkspaceId = host?.context.workspaceId;
 	const hostInput = useMemo(
 		() => ({
-			enabled: hostContext !== undefined && page === null,
+			enabled: hostEnabled,
 			text: parsed.text,
 			kinds: scopeKinds(parsed.scope),
-			context: hostContext ?? {},
+			context: {
+				...(hostProjectId ? { projectId: hostProjectId } : {}),
+				...(hostWorkspaceId ? { workspaceId: hostWorkspaceId } : {}),
+			},
 		}),
-		[hostContext, page, parsed.text, parsed.scope],
+		[hostEnabled, hostProjectId, hostWorkspaceId, parsed.text, parsed.scope],
 	);
 	const hostState = useHostSearch(hostInput);
+	const [previews] = useState(createHostPreviewLoader);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const seen = seenHostIds.current;
 		if (!hostState.groups) {
 			seen.clear();
@@ -492,7 +499,7 @@ function PaletteBody({
 						/>
 					)}
 				</div>
-				{previewItem ? <Preview t={t} item={previewItem} /> : null}
+				{previewItem ? <Preview t={t} item={previewItem} previews={previews} /> : null}
 			</div>
 			<footer className="flex h-32 shrink-0 items-center gap-12 overflow-hidden border-border-muted border-t px-12 tr-text-metadata text-text-subtle">
 				<Hint keys={["↑", "↓"]} label={t("search.hint.select")} />
@@ -830,7 +837,15 @@ function Row({
 	);
 }
 
-function Preview({ t, item }: { t: Translator; item: PaletteItem }) {
+function Preview({
+	t,
+	item,
+	previews,
+}: {
+	t: Translator;
+	item: PaletteItem;
+	previews: HostPreviewLoader;
+}) {
 	const preview = item.preview?.() ?? null;
 	const Icon = item.icon;
 	return (
@@ -839,7 +854,7 @@ function Preview({ t, item }: { t: Translator; item: PaletteItem }) {
 			className="hidden w-[40%] shrink-0 overflow-y-auto border-border-muted border-l px-16 py-16 md:block"
 		>
 			{item.previewTarget ? (
-				<HostPreview t={t} item={item} target={item.previewTarget} />
+				<HostPreview t={t} item={item} target={item.previewTarget} previews={previews} />
 			) : preview ? (
 				<>
 					<div className="flex items-center gap-8 tr-title-card text-text-default">
@@ -874,23 +889,25 @@ function HostPreview({
 	t,
 	item,
 	target,
+	previews,
 }: {
 	t: Translator;
 	item: PaletteItem;
 	target: SearchPreviewTarget;
+	previews: HostPreviewLoader;
 }) {
 	const [result, setResult] = useState<SearchPreviewResult | null>(null);
 	const key = JSON.stringify(target);
 	useEffect(() => {
 		let current = true;
 		setResult(null);
-		void loadHostPreview(JSON.parse(key) as SearchPreviewTarget).then((loaded) => {
+		void previews.load(JSON.parse(key) as SearchPreviewTarget).then((loaded) => {
 			if (current) setResult(loaded);
 		});
 		return () => {
 			current = false;
 		};
-	}, [key]);
+	}, [key, previews]);
 	const Icon = item.icon;
 	return (
 		<div data-testid="search-host-preview" data-state={result?.kind ?? "loading"}>
