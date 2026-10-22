@@ -58,3 +58,22 @@ describe("system and failure notices", () => {
 		}
 	});
 });
+
+describe("user bubble word break and overflow", () => {
+	test("applies break-all and overflow-wrap anywhere to wrap continuous uninterrupted strings", () => {
+		const html = renderRow(
+			{
+				kind: "user",
+				id: "unbroken-prompt",
+				message: {
+					role: "user",
+					content: "A".repeat(100),
+					timestamp: 0,
+				},
+			},
+			false,
+		);
+		expect(html).toContain("break-all");
+		expect(html).toContain("[overflow-wrap:anywhere]");
+	});
+});
