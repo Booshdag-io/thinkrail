@@ -223,17 +223,10 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
-      - id: image
-        run: echo "version=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
-      - name: Cache desktop apt packages
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/desktop-apt
-          key: desktop-apt-${{ steps.image.outputs.version }}-${{ hashFiles('.github/scripts/install-desktop-deps.sh') }}
-      - name: Install desktop and browser runtimes
-        run: |
-          .github/scripts/install-desktop-deps.sh ~/.cache/desktop-apt
-          .github/scripts/install-playwright.sh
+      - name: Install desktop runtime packages
+        uses: ./.github/actions/desktop-apt
+      - name: Install Playwright Chromium
+        run: .github/scripts/install-playwright.sh
       - name: Start virtual display
         run: |
           for attempt in 1 2 3; do

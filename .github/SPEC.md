@@ -65,8 +65,10 @@ cached: the Playwright CDN download takes seconds, no slower than an Actions-cac
 Native artifact smokes run only in shard 1: repeating an identical probe per shard adds no coverage and
 multiplies exposure to runner-environment faults.
 
-Linux desktop jobs install their GTK/WebKitGTK runtime from `.deb` files cached per runner image version and
-package list, so a slow Ubuntu mirror costs only the first run on each new image. They start Xvfb as their own
+Linux desktop jobs install their GTK/WebKitGTK runtime through `.github/actions/desktop-apt`, from `.deb` files
+cached per runner image version and package list, so a slow Ubuntu mirror costs only the first run on each new
+image. A cache saved on a PR or merge-group ref is private to that ref, so the `CI cache` workflow seeds it on
+every push to main, the one scope every PR and merge group can restore. They start Xvfb as their own
 step and proceed only once an X client connects to the exported `DISPLAY`; a server that never answers is
 restarted a bounded number of times, then fails the job. Only the virtual display is retried, never the
 smoke or the browser tests: once the display is proven, every application failure fails CI.
